@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@twa-dev/sdk": "^8.0.2",
+    "axios": "^1.15.1"
+  }
 }

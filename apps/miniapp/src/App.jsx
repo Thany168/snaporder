@@ -16,7 +16,7 @@ function App() {
     const tg = window.Telegram?.WebApp;
 
     // Logic for products and user
-    const [products, setProducts] = useState([]);
+    const [products, setProducts] = useState([{ id: 1, name: "Test Product", price: 10, image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdUY6-53NESEHhJDAyfXsJigOm9_okUAsgjw&s" }]);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
