@@ -1,121 +1,135 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import api from './api/axios';
+import { useCart } from './hooks/useCart';
+
+// Components
+import ProductList from './components/ProductList';
+import Checkout from './pages/Checkout';
 
 function App() {
-  const [count, setCount] = useState(0)
+    const { cart, addToCart, totalAmount, clearCart } = useCart();
+    
+    // View state to toggle between Shop and Checkout
+    const [view, setView] = useState('shop'); 
+    
+    // Telegram WebApp Object
+    const tg = window.Telegram?.WebApp;
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    // Logic for products and user
+    const [products, setProducts] = useState([]);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-      <div className="ticks"></div>
+    useEffect(() => {
+        // Initialize Telegram UI
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        const initializeApp = async () => {
+            try {
+                // 1. Handle Authentication (Telegram vs Dev Mode)
+                let authResponse;
+                
+                if (tg && tg.initData) {
+                    // Real Telegram environment
+                    authResponse = await api.post('/auth/telegram', {
+                        init_data: tg.initData
+                    });
+                } else {
+                    // Local Browser / Dev Mode
+                    authResponse = await api.post('/auth/telegram/dev', {
+                        telegram_id: "12345678",
+                        name: "Sokheng Dev",
+                        role: "customer"
+                    });
+                }
+                
+                // Store token for future requests
+                localStorage.setItem('token', authResponse.data.token);
+                setUser(authResponse.data.user);
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+                // 2. Fetch Products from Owner #1
+                const productsResponse = await api.get('/shop/1/products');
+                setProducts(productsResponse.data);
+
+            } catch (error) {
+                console.error("Initialization failed:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeApp();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+            {/* Header */}
+            <header className="p-4 bg-white shadow-sm flex justify-between items-center sticky top-0 z-10">
+                <h1 className="text-xl font-bold text-gray-800">Sokheng Shop</h1>
+                <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                    Hi, {user?.name || 'Guest'}
+                </span>
+            </header>
+
+            {view === 'shop' ? (
+                <>
+                    <div className="p-2">
+                        <h2 className="text-lg font-semibold px-2 mt-2 text-gray-700">Available Products</h2>
+                        <ProductList products={products} onAdd={addToCart} />
+                    </div>
+
+                    {/* Floating Cart Button */}
+                    {cart.length > 0 && (
+                        <div className="fixed bottom-0 w-full p-4 bg-white border-t shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.1)] z-20">
+                            <button 
+                                onClick={() => setView('checkout')}
+                                className="w-full bg-blue-600 active:bg-blue-700 text-white py-4 rounded-2xl font-bold flex justify-between px-6 transition-all shadow-lg"
+                            >
+                                <span>View My Cart ({cart.length})</span>
+                                <span>${totalAmount.toFixed(2)}</span>
+                            </button>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="p-4">
+                    <button 
+                        onClick={() => setView('shop')} 
+                        className="mb-6 flex items-center text-blue-600 font-semibold"
+                    >
+                        <span className="mr-2 text-xl">←</span> Back to Shop
+                    </button>
+                    
+                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Complete Your Order</h2>
+                    
+                    <Checkout 
+                        cartItems={cart} 
+                        totalAmount={totalAmount} 
+                        onSuccess={() => {
+                            clearCart();
+                            setView('shop');
+                            if (tg) {
+                                tg.showAlert("Order placed successfully!");
+                            } else {
+                                alert("Order placed successfully!");
+                            }
+                        }}
+                    />
+                </div>
+            )}
+        </div>
+    );
 }
 
-export default App
+export default App;
