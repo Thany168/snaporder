@@ -1,10 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://stinging-unknowing-dry.ngrok-free.dev/api', // Your Laravel API URL
+  baseURL: 'https://stinging-unknowing-dry.ngrok-free.dev/api', 
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    // ADD THIS LINE BELOW:
+    'ngrok-skip-browser-warning': 'true'
   },
 });
 
