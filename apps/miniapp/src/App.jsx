@@ -8,20 +8,15 @@ import Checkout from './pages/Checkout';
 
 function App() {
     const { cart, addToCart, totalAmount, clearCart } = useCart();
-    
-    // View state to toggle between Shop and Checkout
     const [view, setView] = useState('shop'); 
-    
-    // Telegram WebApp Object
     const tg = window.Telegram?.WebApp;
 
-    // Logic for products and user
-    const [products, setProducts] = useState([{ id: 1, name: "Test Product", price: 10, image_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdUY6-53NESEHhJDAyfXsJigOm9_okUAsgjw&s" }]);
+    const [products, setProducts] = useState([]);
+    const [owner, setOwner] = useState(null); // Track the current shop owner
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Initialize Telegram UI
         if (tg) {
             tg.ready();
             tg.expand();
@@ -29,30 +24,38 @@ function App() {
 
         const initializeApp = async () => {
             try {
-                // 1. Handle Authentication (Telegram vs Dev Mode)
+                // 1. Get Owner ID from Telegram start_param or URL
+                // Default to 1 if no parameter is found
+                const urlParams = new URLSearchParams(window.location.search);
+                const ownerId = tg?.initDataUnsafe?.start_param || urlParams.get('startapp') || "1";
+
+                // 2. Handle Authentication
                 let authResponse;
-                
                 if (tg && tg.initData) {
-                    // Real Telegram environment
                     authResponse = await api.post('/auth/telegram', {
                         init_data: tg.initData
                     });
                 } else {
-                    // Local Browser / Dev Mode
                     authResponse = await api.post('/auth/telegram/dev', {
-                        telegram_id: "12345678",
+                        telegram_id: "1282406422",
                         name: "Sokheng Dev",
                         role: "customer"
                     });
                 }
                 
-                // Store token for future requests
                 localStorage.setItem('token', authResponse.data.token);
                 setUser(authResponse.data.user);
 
-                // 2. Fetch Products from Owner #1
-                const productsResponse = await api.get('/shop/1/products');
+                // 3. Fetch Shop Info & Products dynamically using the ownerId
+                // We fetch the products from the specific owner path you created in Laravel
+                const productsResponse = await api.get(`/shop/${ownerId}/products`);
                 setProducts(productsResponse.data);
+
+                // 4. (Optional) Fetch Owner details to show the Shop Name
+                // If your backend returns categories in a list, we can find the owner info there
+                // or call your /api/shop/{owner} route
+                const shopResponse = await api.get(`/shop/${ownerId}`);
+                setOwner(shopResponse.data);
 
             } catch (error) {
                 console.error("Initialization failed:", error);
@@ -74,9 +77,14 @@ function App() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-            {/* Header */}
+            {/* Header - Now dynamic! */}
             <header className="p-4 bg-white shadow-sm flex justify-between items-center sticky top-0 z-10">
-                <h1 className="text-xl font-bold text-gray-800">Sokheng Shop</h1>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-800">
+                        {owner?.shop_name || 'My Shop'}
+                    </h1>
+                    <p className="text-xs text-gray-500">{owner?.shop_description}</p>
+                </div>
                 <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
                     Hi, {user?.name || 'Guest'}
                 </span>
@@ -85,11 +93,10 @@ function App() {
             {view === 'shop' ? (
                 <>
                     <div className="p-2">
-                        <h2 className="text-lg font-semibold px-2 mt-2 text-gray-700">Available Products</h2>
+                        <h2 className="text-lg font-semibold px-2 mt-2 text-gray-700">Available Menu</h2>
                         <ProductList products={products} onAdd={addToCart} />
                     </div>
 
-                    {/* Floating Cart Button */}
                     {cart.length > 0 && (
                         <div className="fixed bottom-0 w-full p-4 bg-white border-t shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.1)] z-20">
                             <button 
@@ -108,7 +115,7 @@ function App() {
                         onClick={() => setView('shop')} 
                         className="mb-6 flex items-center text-blue-600 font-semibold"
                     >
-                        <span className="mr-2 text-xl">←</span> Back to Shop
+                        <span className="mr-2 text-xl">←</span> Back to Menu
                     </button>
                     
                     <h2 className="text-2xl font-bold mb-6 text-gray-800">Complete Your Order</h2>
@@ -116,6 +123,7 @@ function App() {
                     <Checkout 
                         cartItems={cart} 
                         totalAmount={totalAmount} 
+                        ownerId={owner?.id} // Pass the dynamic owner ID to Checkout
                         onSuccess={() => {
                             clearCart();
                             setView('shop');
