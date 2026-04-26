@@ -12,7 +12,7 @@ function App() {
     const tg = window.Telegram?.WebApp;
 
     const [products, setProducts] = useState([]);
-    const [owner, setOwner] = useState(null); // Track the current shop owner
+    const [owner, setOwner] = useState(null); // This holds shop name, etc.
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -24,41 +24,46 @@ function App() {
 
         const initializeApp = async () => {
             try {
-                // 1. Get Owner ID from Telegram start_param or URL
-                // Default to 1 if no parameter is found
-                const urlParams = new URLSearchParams(window.location.search);
-                const ownerId = tg?.initDataUnsafe?.start_param || urlParams.get('startapp') || "1";
+                setLoading(true);
 
-                // 2. Handle Authentication
+                const urlParams = new URLSearchParams(window.location.search);
+                const isTelegram = !!tg?.initData;
+
+                // 1. Authentication
                 let authResponse;
-                if (tg && tg.initData) {
-                    authResponse = await api.post('/auth/telegram', {
-                        init_data: tg.initData
-                    });
+                if (isTelegram) {
+                    authResponse = await api.post('/auth/telegram', { init_data: tg.initData });
                 } else {
                     authResponse = await api.post('/auth/telegram/dev', {
                         telegram_id: "1282406422",
                         name: "Sokheng Dev",
-                        role: "customer"
+                        role: "owner"
                     });
                 }
-                
-                localStorage.setItem('token', authResponse.data.token);
+
                 setUser(authResponse.data.user);
+                localStorage.setItem('token', authResponse.data.token);
 
-                // 3. Fetch Shop Info & Products dynamically using the ownerId
-                // We fetch the products from the specific owner path you created in Laravel
-                const productsResponse = await api.get(`/shop/${ownerId}/products`);
-                setProducts(productsResponse.data);
+                // 2. Identify target shop ID
+                const targetId = 
+                    tg?.initDataUnsafe?.start_param || 
+                    urlParams.get('startapp') || 
+                    authResponse.data.owner_id || 
+                    "1";
 
-                // 4. (Optional) Fetch Owner details to show the Shop Name
-                // If your backend returns categories in a list, we can find the owner info there
-                // or call your /api/shop/{owner} route
-                const shopResponse = await api.get(`/shop/${ownerId}`);
-                setOwner(shopResponse.data);
+                console.log("🚀 Current targetId:", targetId);
+
+                // 3. Fetch BOTH Products and Shop Details in parallel
+                const [productsRes, ownerRes] = await Promise.all([
+                    api.get(`/shop/${targetId}/products`),
+                    api.get(`/shop/${targetId}`)
+                ]);
+
+                setProducts(productsRes.data);
+                setOwner(ownerRes.data); // This updates the shop details state
 
             } catch (error) {
-                console.error("Initialization failed:", error);
+                console.error("Critical Init Error:", error);
             } finally {
                 setLoading(false);
             }
@@ -69,7 +74,7 @@ function App() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
@@ -77,13 +82,16 @@ function App() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-            {/* Header - Now dynamic! */}
+            {/* --- DYNAMIC HEADER --- */}
             <header className="p-4 bg-white shadow-sm flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800">
-                        {owner?.shop_name || 'My Shop'}
+                        {/* Use the dynamic owner name, fallback to a loading string */}
+                        {owner?.shop_name || 'Loading Shop...'}
                     </h1>
-                    <p className="text-xs text-gray-500">{owner?.shop_description}</p>
+                    {owner?.shop_description && (
+                        <p className="text-xs text-gray-500">{owner.shop_description}</p>
+                    )}
                 </div>
                 <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
                     Hi, {user?.name || 'Guest'}
@@ -93,7 +101,11 @@ function App() {
             {view === 'shop' ? (
                 <>
                     <div className="p-2">
-                        <h2 className="text-lg font-semibold px-2 mt-2 text-gray-700">Available Menu</h2>
+                        <div className="flex justify-between items-center px-2 mt-2">
+                            <h2 className="text-lg font-semibold text-gray-700">Available Products</h2>
+                            {/* Optional: Show ID for debugging */}
+                            <span className="text-[10px] text-gray-300">ID: {owner?.id}</span>
+                        </div>
                         <ProductList products={products} onAdd={addToCart} />
                     </div>
 
@@ -115,7 +127,7 @@ function App() {
                         onClick={() => setView('shop')} 
                         className="mb-6 flex items-center text-blue-600 font-semibold"
                     >
-                        <span className="mr-2 text-xl">←</span> Back to Menu
+                        <span className="mr-2 text-xl">←</span> Back to Shop
                     </button>
                     
                     <h2 className="text-2xl font-bold mb-6 text-gray-800">Complete Your Order</h2>
@@ -123,7 +135,7 @@ function App() {
                     <Checkout 
                         cartItems={cart} 
                         totalAmount={totalAmount} 
-                        ownerId={owner?.id} // Pass the dynamic owner ID to Checkout
+                        ownerId={owner?.id} // Pass current shop ID to checkout
                         onSuccess={() => {
                             clearCart();
                             setView('shop');

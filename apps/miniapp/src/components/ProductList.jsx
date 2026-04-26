@@ -1,31 +1,37 @@
 import React from 'react';
 
+// Inside your ProductList.jsx
 const ProductList = ({ products, onAdd }) => {
-  return (
-    <div className="grid grid-cols-2 gap-4 p-4">
-      {products && products.length > 0 ? (
-        products.map((product) => (
-          <div key={product.id} className="border rounded-lg p-2 shadow-sm bg-white">
-            <img 
-              src={product.image_url || 'https://via.placeholder.com/150'} 
-              alt={product.name} 
-              className="w-full h-32 object-cover rounded" 
-            />
-            <h3 className="font-bold mt-2 text-sm">{product.name}</h3>
-            <p className="text-blue-600 font-bold">${product.price}</p>
-            <button 
-              onClick={() => onAdd(product)}
-              className="w-full bg-blue-500 text-white mt-2 py-2 rounded-lg text-sm active:scale-95 transition-transform"
-            >
-              + Add to Cart
-            </button>
-          </div>
-        ))
-      ) : (
-        <p className="col-span-2 text-center text-gray-500">No products found.</p>
-      )}
-    </div>
-  );
+    // If 'products' is actually an array of Categories from your API:
+    return (
+        <div className="space-y-8">
+            {products.map((category) => (
+                <div key={category.id} className="category-section">
+                    <h3 className="text-md font-bold text-blue-600 mb-3 px-2">
+                        {category.name}
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                        {category.products && category.products.map((product) => (
+                            <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-gray-800">{product.name}</h4>
+                                    <p className="text-sm text-gray-500">{product.description}</p>
+                                    <p className="text-blue-600 font-bold mt-1">${product.price}</p>
+                                </div>
+                                <button 
+                                    onClick={() => onAdd(product)}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 };
 
 // This is the most important line! 
