@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
 
-const Checkout = ({ cartItems, totalAmount }) => {
+const Checkout = ({ cartItems, totalAmount, ownerId }) => {
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
   const [screenshot, setScreenshot] = useState(null);
@@ -14,15 +14,18 @@ const Checkout = ({ cartItems, totalAmount }) => {
 
     setIsSubmitting(true);
     try {
-      // 1. Prepare Order Data
       const orderData = {
+        owner_id: ownerId, // Send the correct ID to the backend
         phone: phone,
         location: location,
-        items: cartItems // [{product_id: 1, quantity: 2}, ...]
+        items: cartItems,
+        total_amount: totalAmount,
+        customer_name: "Customer Name" // You can get this from Telegram user data
       };
 
       // 2. Create Order
-      const orderRes = await api.post('/shop/1/checkout', orderData);
+      // ✅ Use dynamic ownerId in the URL
+      const orderRes = await api.post(`/shop/${ownerId}/checkout`, orderData);
       const orderId = orderRes.data.id;
 
       // 3. Upload Screenshot
