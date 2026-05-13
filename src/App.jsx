@@ -39,7 +39,7 @@ const App = () => {
     <div className="flex h-screen items-center justify-center bg-[#F8F9FD]">
         <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-bold text-indigo-600 tracking-widest">THREADCRAFT</p>
+            <p className="font-bold text-indigo-600 tracking-widest">PhumYerng</p>
         </div>
     </div>
   );
@@ -49,8 +49,8 @@ const App = () => {
       {/* SIDEBAR */}
       <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-6 hidden md:flex">
         <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200">T</div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">ThreadCraft</span>
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200">PY</div>
+          <span className="text-xl font-bold tracking-tight text-slate-900">PhumYerng</span>
         </div>
 
         <nav className="flex-1 space-y-1">
