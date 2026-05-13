@@ -1,11 +1,21 @@
 import { NavLink } from "react-router-dom";
+import {
+  HiOutlineViewGrid,
+  HiOutlineClipboardList,
+  HiOutlineCreditCard,
+  HiOutlineCube,
+  HiOutlineCollection,
+  HiOutlineTruck,
+  HiOutlineCog,
+  HiOutlineLogout,
+} from "react-icons/hi";
 
 const items = [
-  { path: "/dashboard", label: "Home", icon: "▦" },
-  { path: "/orders", label: "Orders", icon: "📋" },
-  { path: "/products", label: "Products", icon: "📦" },
-  { path: "/payments", label: "Payments", icon: "💳" },
-  { path: "/settings", label: "Settings", icon: "⚙️" },
+  { path: "/dashboard", label: "Home", icon: <HiOutlineViewGrid /> },
+  { path: "/orders", label: "Orders", icon: <HiOutlineClipboardList /> },
+  { path: "/products", label: "Products", icon: <HiOutlineCube /> },
+  { path: "/payments", label: "Payments", icon: <HiOutlineCreditCard /> },
+  { path: "/settings", label: "Settings", icon: <HiOutlineCog /> },
 ];
 
 export default function BottomNav() {

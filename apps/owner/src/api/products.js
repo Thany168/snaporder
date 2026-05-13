@@ -16,17 +16,25 @@ export const getShopProducts = async () => {
 
 // POST /owner/products
 export const createProduct = async (data) => {
-  const res = await client.post("/owner/products", data);
+  const res = await client.post("/owner/products", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const getProductById = async (id) => {
+  const res = await client.get(`/owner/products/${id}`);
   return res.data;
 };
 
 // PUT /owner/products/:id
 export const updateProduct = async (id, data) => {
-  const res = await client.put(`/owner/products/${id}`, data);
+  const res = await client.post(`/owner/products/${id}`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data;
 };
 
-// DELETE /owner/products/:id
 export const deleteProduct = async (id) => {
   const res = await client.delete(`/owner/products/${id}`);
   return res.data;
