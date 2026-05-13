@@ -1,11 +1,12 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { logout } from "../api/auth";
 import {
   HiOutlineViewGrid,
   HiOutlineClipboardList,
   HiOutlineCreditCard,
   HiOutlineCube,
   HiOutlineCollection,
-  HiOutlineTruck,
   HiOutlineCog,
   HiOutlineLogout,
 } from "react-icons/hi";
@@ -59,12 +60,49 @@ const navSections = [
   },
 ];
 
-export default function Sidebar({ collapsed, onClose }) {
-  const initials = "OW";
+// Read user from localStorage (saved on login)
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user")) ?? {};
+  } catch {
+    return {};
+  }
+}
+function getOwner() {
+  try {
+    return JSON.parse(localStorage.getItem("owner")) ?? {};
+  } catch {
+    return {};
+  }
+}
+function getInitials(name = "") {
+  return (
+    name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "OW"
+  );
+}
 
-  const handleLogout = () => {
-    console.log("logout");
+export default function Sidebar({ collapsed, onClose }) {
+  const navigate = useNavigate();
+  const user = getUser();
+  const owner = getOwner();
+  const initials = getInitials(user.name);
+  // const initials = getInitials(cachedUser.name);
+  const [ownerData, setOwnerData] = useState(getOwner());
+
+  const handleLogout = async () => {
+    await logout(); // calls POST /auth/owner/logout + clears token
+    navigate("/login", { replace: true });
   };
+  useEffect(() => {
+    const sync = () => setOwnerData(getOwner());
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
 
   return (
     <div
@@ -74,16 +112,29 @@ export default function Sidebar({ collapsed, onClose }) {
       {/* Brand */}
       <div
         className={`flex items-center gap-3 border-b border-gray-100
-        ${collapsed ? "p-3 justify-center" : "p-4"}`}
+  ${collapsed ? "p-3 justify-center" : "p-4"}`}
       >
-        <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 text-sm font-semibold">
-          DS
+        <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
+          {owner.logo_url ? (
+            <img
+              src={owner.logo_url}
+              alt="shop logo"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-full bg-blue-100 flex items-center
+        justify-center text-blue-700 text-sm font-semibold"
+            >
+              {(owner.shop_name || user.name || "O")[0].toUpperCase()}
+            </div>
+          )}
         </div>
 
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">
-              Demo Shop
+            <p className="text-sm font-medium text-gray-800 truncate">
+              {owner.shop_name || user.name || "Owner Name"}
             </p>
             <p className="text-xs text-gray-400">Owner account</p>
           </div>
@@ -119,7 +170,6 @@ export default function Sidebar({ collapsed, onClose }) {
               >
                 {({ isActive }) => {
                   const Icon = item.icon;
-
                   return (
                     <>
                       <Icon
@@ -133,7 +183,6 @@ export default function Sidebar({ collapsed, onClose }) {
                       {!collapsed && (
                         <>
                           <span className="flex-1">{item.label}</span>
-
                           {item.badge && (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
                               {item.badge}
@@ -150,26 +199,33 @@ export default function Sidebar({ collapsed, onClose }) {
         ))}
       </nav>
 
+      {/* User + Logout */}
       <div className={`border-t border-gray-100 ${collapsed ? "p-2" : "p-3"}`}>
         {collapsed ? (
           <button
             onClick={handleLogout}
-            className="w-full flex justify-center items-center py-2 text-gray-400 hover:text-red-500 transition-colors"
+            className="w-full flex justify-center items-center py-2
+              text-gray-400 hover:text-red-500 transition-colors"
             title="Logout"
           >
             <HiOutlineLogout className="text-lg" />
           </button>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs font-semibold">
+            <div
+              className="w-8 h-8 rounded-full bg-green-100 flex items-center
+              justify-center text-green-700 text-xs font-semibold"
+            >
               {initials}
             </div>
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-800 truncate">
-                Owner
+                {user.name || "Owner"}
               </p>
-              <p className="text-xs text-gray-400 truncate">owner@email.com</p>
+              <p className="text-xs text-gray-400 truncate">
+                {user.phone || user.company_code || ""}
+              </p>
             </div>
 
             <button

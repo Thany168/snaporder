@@ -1,58 +1,140 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
+import client from "../../api/client";
+import { RiArrowGoBackFill } from "react-icons/ri";
 
-const CATEGORIES = ["Drinks", "Food", "Snacks", "Desserts"];
+import {
+  getProductById,
+  createProduct,
+  updateProduct,
+} from "../../api/products";
+
+//  Skeleton
+function ProductSkeleton() {
+  return (
+    <div className="max-w-xl mx-auto animate-pulse space-y-5">
+      <div className="h-6 w-40 bg-gray-200 rounded" />
+      <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-5">
+        <div className="h-36 bg-gray-200 rounded-xl" />
+        <div className="h-10 bg-gray-200 rounded-xl" />
+        <div className="h-20 bg-gray-200 rounded-xl" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-10 bg-gray-200 rounded-xl" />
+          <div className="h-10 bg-gray-200 rounded-xl" />
+        </div>
+        <div className="h-10 bg-gray-200 rounded-xl" />
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-gray-200 rounded" />
+            <div className="h-3 w-32 bg-gray-200 rounded" />
+          </div>
+          <div className="w-11 h-6 bg-gray-200 rounded-full" />
+        </div>
+        <div className="flex gap-3">
+          <div className="flex-1 h-10 bg-gray-200 rounded-xl" />
+          <div className="flex-1 h-10 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProductForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(isEdit);
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
-    name: isEdit ? "Iced Coffee" : "",
-    description: isEdit ? "Classic iced coffee with milk" : "",
-    price: isEdit ? "3.50" : "",
-    category: isEdit ? "Drinks" : "",
-    stock: isEdit ? "-1" : "0",
+    name: "",
+    description: "",
+    price: "",
+    category_id: "",
+    stock: "0",
     available: true,
     image: null,
   });
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  useEffect(() => {
+    client.get("/owner/categories").then((res) => setCategories(res.data));
+  }, []);
 
-  const handleSubmit = () => {
-    console.log("Submit:", form);
-    navigate("/products");
+  useEffect(() => {
+    if (isEdit) loadProduct();
+  }, [id]);
+
+  const loadProduct = async () => {
+    try {
+      setLoading(true);
+      const data = await getProductById(id);
+      setForm({
+        name: data.name || "",
+        description: data.description || "",
+        price: data.price?.toString() || "",
+        category_id: data.category?.id?.toString() || "",
+        stock: data.stock?.toString() || "0",
+        available: data.is_available ?? true,
+        image: null,
+      });
+    } catch (err) {
+      console.error("Load product error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSubmit = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("price", parseFloat(form.price));
+      formData.append("stock", parseInt(form.stock));
+      formData.append("is_available", form.available ? 1 : 0);
+      formData.append("category_id", form.category_id);
+      if (form.image) formData.append("image", form.image);
+
+      if (isEdit) {
+        formData.append("_method", "PUT");
+        await updateProduct(id, formData);
+      } else {
+        await createProduct(formData);
+      }
+
+      navigate("/products");
+    } catch (err) {
+      console.error("Submit error:", err);
+    }
+  };
+
+  if (loading) return <ProductSkeleton />;
 
   return (
     <div className="max-w-xl mx-auto">
-      {/* Back */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate("/products")}
-          className="text-sm text-gray-400 hover:text-gray-600"
+          className="text-sm text-gray-400 hover:text-gray-600 flex items-center justify-center gap-2"
         >
-          ← Products
+          <RiArrowGoBackFill className="" />
+          Products
         </button>
         <span className="text-gray-200">/</span>
         <h1 className="text-sm font-medium text-gray-900">
-          {isEdit ? `Edit product` : "Add product"}
+          {isEdit ? "Edit product" : "Add product"}
         </h1>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-5">
-        {/* Image upload */}
+        {/* Image */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">
             Product image
           </label>
-          <label
-            className="flex flex-col items-center justify-center h-36
-            border-2 border-dashed border-gray-200 rounded-xl cursor-pointer
-            hover:border-blue-300 transition-colors bg-gray-50"
-          >
+          <label className="flex flex-col items-center justify-center h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 bg-gray-50">
             <input
               type="file"
               accept="image/*"
@@ -63,128 +145,80 @@ export default function ProductForm() {
               <p className="text-sm text-green-600">{form.image.name}</p>
             ) : (
               <>
-                <p className="text-2xl mb-1">📷</p>
-                <p className="text-xs text-gray-400">Tap to upload image</p>
+                <p className="text-2xl">📷</p>
+                <p className="text-xs text-gray-400">Upload image</p>
               </>
             )}
           </label>
         </div>
 
         {/* Name */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Product name <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="e.g. Iced Coffee"
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-              text-sm outline-none focus:border-blue-400"
-          />
-        </div>
+        <input
+          type="text"
+          value={form.name}
+          onChange={(e) => set("name", e.target.value)}
+          placeholder="Product name"
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+        />
 
         {/* Description */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            placeholder="Describe your product..."
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-              text-sm outline-none focus:border-blue-400 resize-none"
-          />
-        </div>
+        <textarea
+          rows={3}
+          value={form.description}
+          onChange={(e) => set("description", e.target.value)}
+          placeholder="Description"
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+        />
 
         {/* Price + Category */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Price ($) <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-                text-sm outline-none focus:border-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Category
-            </label>
-            <select
-              value={form.category}
-              onChange={(e) => set("category", e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-                text-sm outline-none focus:border-blue-400 bg-white"
-            >
-              <option value="">Select...</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
+          <input
+            type="number"
+            value={form.price}
+            onChange={(e) => set("price", e.target.value)}
+            placeholder="Price"
+            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+          />
+
+          <select
+            value={form.category_id}
+            onChange={(e) => set("category_id", e.target.value)}
+            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+          >
+            <option value="">Category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Stock */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Stock (-1 = unlimited)
-          </label>
-          <input
-            type="number"
-            value={form.stock}
-            onChange={(e) => set("stock", e.target.value)}
-            min="-1"
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-              text-sm outline-none focus:border-blue-400"
+        <input
+          type="number"
+          value={form.stock}
+          onChange={(e) => set("stock", e.target.value)}
+          className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm"
+        />
+
+        {/* Available toggle */}
+        <div className="flex justify-between items-center">
+          <span className="text-sm">Available</span>
+          <button
+            onClick={() => set("available", !form.available)}
+            className={`w-11 h-6 rounded-full transition ${
+              form.available ? "bg-green-500" : "bg-gray-300"
+            }`}
           />
         </div>
 
-        {/* Available toggle */}
-        <div className="flex items-center justify-between py-2">
-          <div>
-            <p className="text-sm font-medium text-gray-900">Available</p>
-            <p className="text-xs text-gray-400">
-              Show this product in the shop
-            </p>
-          </div>
-          <button
-            onClick={() => set("available", !form.available)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${
-              form.available ? "bg-green-500" : "bg-gray-300"
-            }`}
-          >
-            <span
-              className={`absolute top-1 w-4 h-4 bg-white rounded-full
-              transition-all shadow-sm ${form.available ? "left-6" : "left-1"}`}
-            />
-          </button>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigate("/products")}
-          >
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <Button onClick={() => navigate("/products")} variant="outline">
             Cancel
           </Button>
-          <Button variant="primary" className="flex-1" onClick={handleSubmit}>
-            {isEdit ? "Save changes" : "Add product"}
-          </Button>
+          <Button onClick={handleSubmit}>{isEdit ? "Save" : "Create"}</Button>
         </div>
       </div>
     </div>

@@ -59,16 +59,6 @@ export default function Header({ onMenuClick }) {
         </button>
 
         <button
-          onClick={() => navigate("/products/new")}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600
-          text-white rounded-lg text-xs font-medium hover:bg-blue-700
-          transition shadow-sm"
-        >
-          <HiOutlinePlus className="text-sm" />
-          Product
-        </button>
-
-        <button
           className="relative w-9 h-9 flex items-center justify-center
           border border-gray-200 rounded-lg hover:bg-gray-50 transition"
         >
