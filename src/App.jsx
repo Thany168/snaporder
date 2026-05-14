@@ -47,7 +47,7 @@ const App = () => {
   return (
     <div className="flex h-screen bg-[#F8F9FD] text-slate-700 font-sans">
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-6 hidden md:flex">
+      <aside className="w-64 bg-white border-r border-slate-100 flex-col p-6 hidden md:flex">
         <div className="flex items-center gap-3 mb-10 px-2">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-200">T</div>
           <span className="text-xl font-bold tracking-tight text-slate-900">ThreadCraft</span>
