@@ -1,24 +1,4 @@
 {
-<<<<<<< HEAD
-  "name": "frontend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:miniapp": "pnpm --filter miniapp dev",
-    "dev:owner": "pnpm --filter owner dev",
-    "dev:admin": "pnpm --filter admin dev",
-    "build:all": "pnpm -r build"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@twa-dev/sdk": "^8.0.2",
-    "all": "^0.0.0",
-    "axios": "^1.15.1"
-=======
   "name": "admin",
   "private": true,
   "version": "0.0.0",
@@ -49,6 +29,5 @@
     "postcss": "^8.5.14",
     "tailwindcss": "^4.2.4",
     "vite": "^8.0.8"
->>>>>>> 3ae2b02 (admin-fix)
   }
 }
