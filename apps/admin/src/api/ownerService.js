@@ -1,20 +1,40 @@
 // src/api/ownerService.js
-import axios from 'axios';
+import axios from "axios";
 
-// Use your ngrok URL here
-const API_BASE = 'https://stinging-unknowing-dry.ngrok-free.dev/api/admin'; 
+const API_BASE = "https://stinging-unknowing-dry.ngrok-free.dev/api/admin";
 
-const headers = () => ({
-    headers: { 
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        // IMPORTANT: ngrok sometimes requires this header to skip the warning page
-        'ngrok-skip-browser-warning': 'true' 
-    }
-});
+const getHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "ngrok-skip-browser-warning": "true",
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+  };
+};
 
 export const ownerService = {
-    getStats: () => axios.get(`${API_BASE}/dashboard-stats`, headers()),
-    getOwners: () => axios.get(`${API_BASE}/owners`, headers()),
-    toggleStatus: (id, status) => axios.patch(`${API_BASE}/owners/${id}/status`, { status }, headers()),
-    deleteOwner: (id) => axios.delete(`${API_BASE}/owners/${id}`, headers()),
+  // 📊 GET: /api/admin/dashboard-stats
+  getStats: async () => {
+    const res = await axios.get(`${API_BASE}/dashboard-stats`, getHeaders());
+    return res?.data ? res.data : res;
+  },
+
+  // 📋 GET: /api/admin/owners
+  getOwners: async () => {
+  const res = await axios.get(`${API_BASE}/owners`, getHeaders());
+  return res?.data ? res.data : res;
+},
+
+  // 🔐 POST: /api/admin/owners/{id}/toggle-status
+  toggleStatus: (id, status) =>
+    axios.post(`${API_BASE}/owners/${id}/toggle-status`, { status }, getHeaders()),
+
+  // 🌟 POST: /api/admin/owners
+  store: async (data) => {
+    const res = await axios.post(`${API_BASE}/owners`, data, getHeaders());
+    return res?.data ? res.data : res;
+  },
 };
