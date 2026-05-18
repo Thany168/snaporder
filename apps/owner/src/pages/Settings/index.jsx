@@ -359,39 +359,6 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
-          {/* Account info */}
-          <Section title="Account">
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-400">Name</p>
-                <p className="text-sm font-medium text-gray-800">
-                  {cachedUser.name || "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Company Code</p>
-                <p className="text-sm font-medium text-gray-800">
-                  {cachedUser.company_code || "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Phone</p>
-                <p className="text-sm font-medium text-gray-800">
-                  {cachedUser.phone || "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Role</p>
-                <span
-                  className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700
-                  text-xs font-medium rounded-full capitalize"
-                >
-                  {cachedUser.role || "owner"}
-                </span>
-              </div>
-            </div>
-          </Section>
-
           {/* Subscription */}
           <Section title="Subscription">
             <span
