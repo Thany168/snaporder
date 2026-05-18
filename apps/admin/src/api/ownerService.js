@@ -7,10 +7,10 @@ const getHeaders = () => {
   const token = localStorage.getItem("token");
   return {
     headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "ngrok-skip-browser-warning": "true",
+      "Authorization": token ? `Bearer ${token}` : "",
+      "ngrok-skip-browser-warning": "true", // 🌟 Bypasses the HTML blocker screening screen!
+      "Accept": "application/json",         // 🌟 Tells Laravel to return clean JSON fields data array strings
       "Content-Type": "application/json",
-      "Accept": "application/json",
     },
   };
 };
@@ -24,9 +24,9 @@ export const ownerService = {
 
   // 📋 GET: /api/admin/owners
   getOwners: async () => {
-  const res = await axios.get(`${API_BASE}/owners`, getHeaders());
-  return res?.data ? res.data : res;
-},
+    const res = await axios.get(`${API_BASE}/owners`, getHeaders());
+    return res?.data ? res.data : res;
+  },
 
   // 🔐 POST: /api/admin/owners/{id}/toggle-status
   toggleStatus: (id, status) =>

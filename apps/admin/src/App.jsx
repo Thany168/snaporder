@@ -36,55 +36,63 @@ const App = () => {
 
   // 🌟 UNIFIED MOUNT ENGINE: Runs flawlessly on F5 browser refresh
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setLoading(false);
+    return;
+  }
 
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setLoading(true);
+  if (isFetchingRef.current) return;
+  isFetchingRef.current = true;
+  setLoading(true);
 
-    const initializeDashboard = async () => {
-      try {
-        // Fetch both endpoints together securely over the ngrok tunnel
-        const [ownersRes, statsRes] = await Promise.all([
-          ownerService.getOwners(),
-          ownerService.getStats()
-        ]);
+  const initializeDashboard = async () => {
+    try {
+      // 1. Fetch both endpoint collections together securely over ngrok tunnel paths
+      const [ownersRes, statsRes] = await Promise.all([
+        ownerService.getOwners(),
+        ownerService.getStats()
+      ]);
 
-        // Bulletproof Extraction for Owners Array Data (Pre-stripped or raw)
-        let finalOwnersList = [];
-        if (Array.isArray(ownersRes)) {
-          finalOwnersList = ownersRes;
-        } else if (ownersRes?.data && Array.isArray(ownersRes.data)) {
-          finalOwnersList = ownersRes.data;
-        } else if (ownersRes?.data?.data && Array.isArray(ownersRes.data.data)) {
-          finalOwnersList = ownersRes.data.data;
-        }
-        setOwners(finalOwnersList);
-
-        // Map KPI Metrics Safely
-        const statsData = statsRes?.data ? statsRes.data : statsRes;
-        if (statsData) {
-          setStats({
-            totalShops: statsData.total_shops || 0,
-            activeSubs: statsData.active_subscriptions || 0,
-            totalRevenue: statsData.total_revenue || 0,
-            recentOrders: statsData.recent_orders || 0,
-          });
-        }
-      } catch (err) {
-        console.error("Initialization sync failed:", err);
-      } finally {
-        isFetchingRef.current = false;
-        setLoading(false);
+      // 🌟 DYNAMIC BULLETPROOF ARRAY CHECK WRAPPER:
+      // This catches the database records whether they are pre-stripped by your service or raw!
+      let verifiedOwnersList = [];
+      
+      if (Array.isArray(ownersRes)) {
+        // Option A: Clean array passed straight out of your updated service layer file
+        verifiedOwnersList = ownersRes;
+      } else if (ownersRes?.data && Array.isArray(ownersRes.data)) {
+        // Option B: Standard Axios container object payload tracking path
+        verifiedOwnersList = ownersRes.data;
+      } else if (ownersRes?.data?.data && Array.isArray(ownersRes.data.data)) {
+        // Option C: Paginated multi-tier database object collection rows return layout mapping
+        verifiedOwnersList = ownersRes.data.data;
       }
-    };
 
-    initializeDashboard();
-  }, []);
+      // Commit the verified results list directly into your components display state matrix!
+      setOwners(verifiedOwnersList);
+
+      // 🌟 Extract and assign KPI statistics dashboard values cleanly
+      const statsData = statsRes?.data ? statsRes.data : statsRes;
+      if (statsData) {
+        setStats({
+          totalShops: statsData.total_shops || 0,
+          activeSubs: statsData.active_subscriptions || 0,
+          totalRevenue: statsData.total_revenue || 0,
+          recentOrders: statsData.recent_orders || 0,
+        });
+      }
+    } catch (err) {
+      console.error("Initialization sync failed:", err);
+      setOwners([]); // Handle gracefully to clear the data view grid
+    } finally {
+      isFetchingRef.current = false;
+      setLoading(false);
+    }
+  };
+
+  initializeDashboard();
+}, []);
 
   const handleCreateOwner = async (e) => {
     e.preventDefault();
