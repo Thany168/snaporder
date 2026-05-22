@@ -1,88 +1,20 @@
-import React, { useState } from 'react';
-import api from '../api/axios';
+import api from '../api/axios'; // Import your custom axios client instance
 
-const Checkout = ({ cartItems, totalAmount, ownerId }) => {
-  const [phone, setPhone] = useState('');
-  const [location, setLocation] = useState('');
-  const [screenshot, setScreenshot] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const handleCheckoutSubmit = async (checkoutData) => {
+    // 🚀 1. Dynamically read the ?owner_id=XX query parameter from the URL browser window
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Fallback to '21' (or your latest active DB ID row) if testing locally without Telegram
+    const ownerId = urlParams.get('owner_id') || '21'; 
 
-  // This is your function!
-  const handleCheckout = async (e) => {
-    e.preventDefault();
-    if (!screenshot) return alert("Please upload a payment screenshot first!");
-
-    setIsSubmitting(true);
     try {
-      const orderData = {
-        owner_id: ownerId, // Send the correct ID to the backend
-        phone: phone,
-        location: location,
-        items: cartItems,
-        total_amount: totalAmount,
-        customer_name: "Customer Name" // You can get this from Telegram user data
-      };
-
-      // 2. Create Order
-      // ✅ Use dynamic ownerId in the URL
-      const orderRes = await api.post(`/shop/${ownerId}/checkout`, orderData);
-      const orderId = orderRes.data.id;
-
-      // 3. Upload Screenshot
-      const formData = new FormData();
-      formData.append('payment_screenshot', screenshot);
-
-      await api.post(`/orders/${orderId}/payment`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      alert("Order Successful! Pending verification.");
+        // 🚀 2. Inject the dynamic owner ID into the api request string!
+        const response = await api.post(`/shop/${ownerId}/checkout`, checkoutData);
+        
+        console.log('🎉 Order processed successfully:', response.data);
+        alert('Order Placed Successfully!');
+        
     } catch (error) {
-      console.error(error);
-      alert("Checkout failed. Check console.");
-    } finally {
-      setIsSubmitting(false);
+        console.error('❌ Checkout Failed:', error.response?.data || error.message);
     }
-  };
-
-  return (
-    <form onSubmit={handleCheckout} className="p-4 space-y-4">
-      <input 
-        type="text" 
-        placeholder="Phone Number" 
-        className="w-full border p-2 rounded"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        required 
-      />
-      
-      <textarea 
-        placeholder="Delivery Location" 
-        className="w-full border p-2 rounded"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        required 
-      />
-
-      <div className="border-2 border-dashed p-4 text-center">
-        <label className="block mb-2 text-sm font-medium">Upload Payment Screenshot</label>
-        <input 
-          type="file" 
-          accept="image/*"
-          onChange={(e) => setScreenshot(e.target.files[0])}
-          required 
-        />
-      </div>
-
-      <button 
-        type="submit" 
-        disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold"
-      >
-        {isSubmitting ? 'Processing...' : `Place Order ($${totalAmount})`}
-      </button>
-    </form>
-  );
 };
-
-export default Checkout;
