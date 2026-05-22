@@ -23,49 +23,59 @@ function App() {
     }
 
     const initializeApp = async () => {
-            try {
-                setLoading(true);
+        try {
+            setLoading(true);
 
-                // 🚀 1. EXTRACTION FIRST: Grab the dynamic target param right out of the URL context
-                const queryId = 
-                    tg?.initDataUnsafe?.start_param || 
-                    urlParams.get('startapp') || 
-                    urlParams.get('owner_id') ||
-                    "28"; // Safe initial fallback string pointer
+            // 🌟 FIX: Declare the missing parameters so the script doesn't crash!
+            const urlParams = new URLSearchParams(window.location.search);
+            const isTelegram = !!tg?.initData;
 
-                // 2. Authentication Payload Dispatch
-                let authResponse;
-                if (isTelegram) {
-                    // 🚀 CRITICAL FIX: Pass owner_id here so the real production login route catches it!
-                    authResponse = await api.post('/auth/telegram', { 
-                        init_data: tg.initData,
-                        owner_id: queryId 
-                    });
-                } else {
-                    authResponse = await api.post('/auth/telegram/dev', {
-                        telegram_id: "1282406422",
-                        name: "Sokheng Dev",
-                        role: "owner",
-                        owner_id: queryId 
-                    });
-                }
+            // 🚀 1. EXTRACTION FIRST: Grab the dynamic target parameter out of the context
+            const queryId = 
+                tg?.initDataUnsafe?.start_param || 
+                urlParams.get('startapp') || 
+                urlParams.get('owner_id') ||
+                "28"; // Fallback directly to JONHWICH for safety if completely parameterless
 
-                setUser(authResponse.data.user);
-                localStorage.setItem('token', authResponse.data.token);
-
-                // Use the backend-verified dynamic owner identity response mapping
-                const targetId = authResponse.data.owner_id || queryId;
-                console.log("🚀 Loaded Tenant ID Verified By Backend:", targetId);
-
-                setProducts(productsRes.data);
-                setOwner(ownerRes.data); 
-
-            } catch (error) {
-                console.error("Critical Init Error:", error);
-            } finally {
-                setLoading(false);
+            // 2. Authentication Payload Dispatch
+            let authResponse;
+            if (isTelegram) {
+                authResponse = await api.post('/auth/telegram', { 
+                    init_data: tg.initData,
+                    owner_id: queryId 
+                });
+            } else {
+                authResponse = await api.post('/auth/telegram/dev', {
+                    telegram_id: "1282406422",
+                    name: "Sokheng Dev",
+                    role: "owner",
+                    owner_id: queryId 
+                });
             }
-        };
+
+            setUser(authResponse.data.user);
+            localStorage.setItem('token', authResponse.data.token);
+
+            // Use the backend-verified dynamic owner identity response mapping
+            const targetId = authResponse.data.owner_id || queryId;
+            console.log("🚀 Loaded Tenant ID Verified By Backend:", targetId);
+
+            // 3. Parallel Database Request Pipelines
+            // 🌟 FIX: The API variables fetch the freshly updated targetId cleanly now!
+            const [productsRes, ownerRes] = await Promise.all([
+                api.get(`/shop/${targetId}/products`),
+                api.get(`/shop/${targetId}`)
+            ]);
+
+            setProducts(productsRes.data);
+            setOwner(ownerRes.data); 
+
+        } catch (error) {
+            console.error("Critical Init Error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     initializeApp(); // 🌟 FIXED: Calls the initialization sequence
   }, []); // 🌟 FIXED: Closes useEffect with an empty dependency array
