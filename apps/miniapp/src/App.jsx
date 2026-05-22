@@ -23,56 +23,57 @@ function App() {
     }
 
     const initializeApp = async () => {
-      try {
-        setLoading(true);
+            try {
+                setLoading(true);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const isTelegram = !!tg?.initData;
+                const urlParams = new URLSearchParams(window.location.search);
+                const isTelegram = !!tg?.initData;
 
-        // 1. Authentication Execution
-        let authResponse;
-        if (isTelegram) {
-          authResponse = await api.post('/auth/telegram', { init_data: tg.initData });
-        } else {
-          authResponse = await api.post('/auth/telegram/dev', {
-            telegram_id: "1282406422",
-            name: "Sokheng Dev",
-            role: "owner"
-          });
-        }
+                // 🚀 1. EXTRACTION FIRST: Grab the dynamic target param string parameter string
+                const queryId = 
+                    tg?.initDataUnsafe?.start_param || 
+                    urlParams.get('startapp') || 
+                    urlParams.get('owner_id') ||
+                    "28"; // Fallback directly to JONHWICH for safety
 
-        setUser(authResponse.data.user);
-        localStorage.setItem('token', authResponse.data.token);
+                // 2. Authentication Payload Dispatch
+                let authResponse;
+                if (isTelegram) {
+                    authResponse = await api.post('/auth/telegram', { 
+                        init_data: tg.initData,
+                        owner_id: queryId 
+                    });
+                } else {
+                    authResponse = await api.post('/auth/telegram/dev', {
+                        telegram_id: "1282406422",
+                        name: "Sokheng Dev",
+                        role: "owner",
+                        owner_id: queryId // 🚀 SEND THE TARGET NUMBER TO TELEGRAM_AUTH_CONTROLLER
+                    });
+                }
 
-        // 🚀 DYNAMIC STRATIFICATION: Extract requested shop parameters
-        const queryId = 
-          tg?.initDataUnsafe?.start_param || 
-          urlParams.get('startapp') || 
-          urlParams.get('owner_id');
+                setUser(authResponse.data.user);
+                localStorage.setItem('token', authResponse.data.token);
 
-        // Use requested ID, fallback to logged-in user shop, fallback to safety record
-        const targetId = queryId || authResponse.data.owner_id || "21";
+                // Use the backend-verified dynamic owner identity response
+                const targetId = authResponse.data.owner_id || queryId;
+                console.log("🚀 Loaded Tenant ID:", targetId);
 
-        console.log("🔍 [Debug] Telegram start_param:", tg?.initDataUnsafe?.start_param);
-        console.log("🔍 [Debug] URL query owner_id:", urlParams.get('owner_id'));
-        console.log("🔍 [Debug] Auth response owner_id:", authResponse.data.owner_id);
-        console.log("🚀 Final Calculated Target ID:", targetId);
+                // 3. Parallel Database Request Pipelines
+                const [productsRes, ownerRes] = await Promise.all([
+                    api.get(`/shop/${targetId}/products`),
+                    api.get(`/shop/${targetId}`)
+                ]);
 
-        // 3. Fetch BOTH Products and Shop Details based on dynamic targetId
-        const [productsRes, ownerRes] = await Promise.all([
-          api.get(`/shop/${targetId}/products`),
-          api.get(`/shop/${targetId}`)
-        ]);
+                setProducts(productsRes.data);
+                setOwner(ownerRes.data); 
 
-        setProducts(productsRes.data);
-        setOwner(ownerRes.data); 
-
-      } catch (error) {
-        console.error("Critical Init Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    }; // 🌟 FIXED: Closes initializeApp
+            } catch (error) {
+                console.error("Critical Init Error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
     initializeApp(); // 🌟 FIXED: Calls the initialization sequence
   }, []); // 🌟 FIXED: Closes useEffect with an empty dependency array
