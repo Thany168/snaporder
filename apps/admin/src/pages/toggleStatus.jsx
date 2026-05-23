@@ -2,7 +2,7 @@ const OwnerTable = () => {
     const [owners, setOwners] = useState([]);
 
     const fetchOwners = async () => {
-        const res = await axios.get('/api/admin/owners');
+        const res = await axios.get('https://stinging-unknowing-dry.ngrok-free.dev/api/admin/owners');
         setOwners(res.data.data);
     };
 
@@ -10,7 +10,7 @@ const OwnerTable = () => {
 
     const handleToggleStatus = async (id, newStatus) => {
         try {
-            await axios.patch(`/api/admin/owners/${id}/status`, { status: newStatus });
+            await axios.patch(`https://stinging-unknowing-dry.ngrok-free.dev/api/admin/owners/${id}/status`, { status: newStatus });
             alert(`Shop is now ${newStatus}`);
             fetchOwners(); // Refresh list
         } catch (err) {

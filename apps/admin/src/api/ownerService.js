@@ -1,15 +1,16 @@
-// src/api/ownerService.js
 import axios from "axios";
 
+// 🚀 FIXED FOR PRODUCTION MIXED CONTENT RULES:
+// Switch from localhost back to your secure HTTPS ngrok address while testing live client deployments!
 const API_BASE = "https://stinging-unknowing-dry.ngrok-free.dev/api/admin";
 
 const getHeaders = () => {
   const token = localStorage.getItem("token");
   return {
     headers: {
-      "Authorization": token ? `Bearer ${token}` : "",
-      "ngrok-skip-browser-warning": "true", // 🌟 Bypasses the HTML blocker screening screen!
-      "Accept": "application/json",         // 🌟 Tells Laravel to return clean JSON fields data array strings
+      Authorization: token ? `Bearer ${token}` : "",
+      "ngrok-skip-browser-warning": "true", 
+      Accept: "application/json", 
       "Content-Type": "application/json",
     },
   };
@@ -29,8 +30,14 @@ export const ownerService = {
   },
 
   // 🔐 POST: /api/admin/owners/{id}/toggle-status
-  toggleStatus: (id, status) =>
-    axios.post(`${API_BASE}/owners/${id}/toggle-status`, { status }, getHeaders()),
+  toggleStatus: async (id, status) => {
+    const res = await axios.post(
+      `${API_BASE}/owners/${id}/toggle-status`,
+      { status },
+      getHeaders()
+    );
+    return res?.data ? res.data : res;
+  },
 
   // 🌟 POST: /api/admin/owners
   store: async (data) => {
