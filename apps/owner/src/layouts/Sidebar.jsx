@@ -93,6 +93,7 @@ export default function Sidebar({ collapsed, onClose }) {
   const initials = getInitials(user.name);
   // const initials = getInitials(cachedUser.name);
   const [ownerData, setOwnerData] = useState(getOwner());
+  console.log("user from localStorage:", user);
 
   const handleLogout = async () => {
     await logout(); // calls POST /auth/owner/logout + clears token
@@ -221,7 +222,7 @@ export default function Sidebar({ collapsed, onClose }) {
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-800 truncate">
-                {user.name || "Owner"}
+                {user.name}
               </p>
               <p className="text-xs text-gray-400 truncate">
                 {user.phone || user.company_code || ""}

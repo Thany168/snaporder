@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ShopMainView from './components/ShopMainView'; // 🚀 Import your main component
 
@@ -7,5 +8,6 @@ function App() {
         <ShopMainView />
     );
 }
+
 
 export default App;
