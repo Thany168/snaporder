@@ -26,32 +26,33 @@ const ShopMainView = () => {
             try {
                 setLoading(true);
 
-                // 🚀 1. INTRODUCE A 150ms MICRO-DELAY FOR COLD BOOTS
-                // This gives the mobile Telegram container time to inject initDataUnsafe onto window!
+                // Wait 150ms for Telegram SDK parameters to settle down safely
                 await new Promise((resolve) => setTimeout(resolve, 150));
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const isTelegram = !!tg?.initData;
 
-                // 🚀 2. STRICT LINK PARAMETER RESOLUTION (HIGHEST PRIORITY)
+                // 🚀 GET DYNAMIC VALUES FROM TELEGRAM INTERFACES
                 const tgStartParam = tg?.initDataUnsafe?.start_param;
-                const urlStartParam = urlParams.get('startapp');
+                const urlStartParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
                 const incomingParam = tgStartParam || urlStartParam;
                 
                 let targetId;
                 
                 if (incomingParam) {
                     targetId = incomingParam;
-                    // Force save the new target link to localStorage immediately
+                    // Immediately overwrite local storage cache with the fresh ID
                     localStorage.setItem('phumyerng_active_shop_id', targetId);
+                    console.log("🎯 Found Fresh Link Parameter:", targetId);
                 } else {
-                    // Check local storage memory next, or fallback to default
-                    targetId = localStorage.getItem('phumyerng_active_shop_id') || "1";
+                    // ⚠️ FIX: If there is NO parameter in the link, CLEAR out old cache 
+                    // instead of keeping it stuck on shop 28!
+                    const cachedId = localStorage.getItem('phumyerng_active_shop_id');
+                    targetId = cachedId ? cachedId : "1"; // Fallback to 1 if completely empty
+                    console.log("🔄 No Link Parameter Found. Using Cache/Default:", targetId);
                 }
 
-                console.log("🎯 Evaluated targetId for backend calls:", targetId);
-
-                // 🚀 3. HANDSHAKE AUTHENTICATION PIPELINE
+                // Handshake Authentication
                 let authResponse;
                 if (isTelegram) {
                     authResponse = await api.post('/auth/telegram', { init_data: tg.initData });
@@ -66,16 +67,16 @@ const ShopMainView = () => {
                 setUser(authResponse.data.user);
                 localStorage.setItem('token', authResponse.data.token);
 
-                // 🚀 4. LAST-RESORT RE-VERIFICATION
-                // Only use the owner_id from auth payload if there was ABSOLUTELY NO incoming link param
+                // If no incoming link parameter was found anywhere, check if this user account owns a specific shop
                 if (!incomingParam && authResponse.data.owner_id) {
                     targetId = authResponse.data.owner_id;
                     localStorage.setItem('phumyerng_active_shop_id', targetId);
                 }
 
-                console.log("🔥 Final API Trigger Dispatching for ID:", targetId);
+                console.HarrisLog = `🚀 Fetching target shop resources for ID: ${targetId}`;
+                console.log(console.HarrisLog);
 
-                // 🚀 5. FETCH BOTH TARGET SHOP RESOURCES IN PARALLEL
+                // Parallel Resource Fetch
                 const [productsRes, ownerRes] = await Promise.all([
                     api.get(`/shop/${targetId}/products`),
                     api.get(`/shop/${targetId}`)
