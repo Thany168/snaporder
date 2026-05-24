@@ -3,8 +3,8 @@ import api from '../api/axios';
 import { useCart } from '../hooks/useCart';
 
 // Components
-import ProductList from '../components/ProductList';
-import Checkout from './Checkout';
+import ProductList from './ProductList';
+import Checkout from '../pages/Checkout';
 
 const ShopMainView = () => {
     const { cart, addToCart, totalAmount, clearCart } = useCart();
@@ -25,10 +25,33 @@ const ShopMainView = () => {
         const initializeApp = async () => {
             try {
                 setLoading(true);
+
+                // 🚀 1. INTRODUCE A 150ms MICRO-DELAY FOR COLD BOOTS
+                // This gives the mobile Telegram container time to inject initDataUnsafe onto window!
+                await new Promise((resolve) => setTimeout(resolve, 150));
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const isTelegram = !!tg?.initData;
 
-                // 1. Handshake Authentication
+                // 🚀 2. STRICT LINK PARAMETER RESOLUTION (HIGHEST PRIORITY)
+                const tgStartParam = tg?.initDataUnsafe?.start_param;
+                const urlStartParam = urlParams.get('startapp');
+                const incomingParam = tgStartParam || urlStartParam;
+                
+                let targetId;
+                
+                if (incomingParam) {
+                    targetId = incomingParam;
+                    // Force save the new target link to localStorage immediately
+                    localStorage.setItem('phumyerng_active_shop_id', targetId);
+                } else {
+                    // Check local storage memory next, or fallback to default
+                    targetId = localStorage.getItem('phumyerng_active_shop_id') || "1";
+                }
+
+                console.log("🎯 Evaluated targetId for backend calls:", targetId);
+
+                // 🚀 3. HANDSHAKE AUTHENTICATION PIPELINE
                 let authResponse;
                 if (isTelegram) {
                     authResponse = await api.post('/auth/telegram', { init_data: tg.initData });
@@ -43,32 +66,26 @@ const ShopMainView = () => {
                 setUser(authResponse.data.user);
                 localStorage.setItem('token', authResponse.data.token);
 
-                // 🚀 2. BULLETPROOF ID SELECTION: Give direct link parameters highest priority!
-                // This stops the app from defaulting back to old database owners profiles!
-                const incomingParam = tg?.initDataUnsafe?.start_param || urlParams.get('startapp');
-                
-                let targetId;
-                if (incomingParam) {
-                    targetId = incomingParam;
-                    // Cache it locally so page navigation clicks don't break session context
-                    localStorage.setItem('active_tg_shop_id', targetId);
-                } else {
-                    targetId = localStorage.getItem('active_tg_shop_id') || authResponse.data.owner_id || "1";
+                // 🚀 4. LAST-RESORT RE-VERIFICATION
+                // Only use the owner_id from auth payload if there was ABSOLUTELY NO incoming link param
+                if (!incomingParam && authResponse.data.owner_id) {
+                    targetId = authResponse.data.owner_id;
+                    localStorage.setItem('phumyerng_active_shop_id', targetId);
                 }
 
-                console.log("🎯 Dynamic Target Shop ID Loaded:", targetId);
+                console.log("🔥 Final API Trigger Dispatching for ID:", targetId);
 
-                // 3. Run parallel tenant resource load sequences
+                // 🚀 5. FETCH BOTH TARGET SHOP RESOURCES IN PARALLEL
                 const [productsRes, ownerRes] = await Promise.all([
                     api.get(`/shop/${targetId}/products`),
                     api.get(`/shop/${targetId}`)
                 ]);
 
                 setProducts(productsRes.data);
-                setOwner(ownerRes.data);
+                setOwner(ownerRes.data); 
 
             } catch (error) {
-                console.error("Critical Init Error:", error);
+                console.error("Critical Mini App Component Init Error:", error);
             } finally {
                 setLoading(false);
             }
@@ -106,7 +123,7 @@ const ShopMainView = () => {
                     <div className="p-2">
                         <div className="flex justify-between items-center px-2 mt-2">
                             <h2 className="text-lg font-semibold text-gray-700">Available Products</h2>
-                            <span className="text-[10px] text-gray-300">ID: {owner?.id}</span>
+                            <span className="text-[10px] text-gray-400 font-bold">Shop ID: {owner?.id}</span>
                         </div>
                         <ProductList products={products} onAdd={addToCart} />
                     </div>
