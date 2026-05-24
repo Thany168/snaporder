@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useCart } from '../hooks/useCart';
 
@@ -15,42 +15,60 @@ const ShopMainView = () => {
     const [owner, setOwner] = useState(null); 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [currentShopId, setCurrentShopId] = useState(null); // 🚀 Track active ID in React State!
 
+    // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
+    // This looks at Telegram and the browser URL directly to see what the user is currently clicking
+    const getLiveParamId = useCallback(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tgParam = tg?.initDataUnsafe?.start_param;
+        const urlParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
+        
+        return tgParam || urlParam || null;
+    }, [tg]);
+
+    // 🚀 STEP 2: RE-ROUTE WATCHER ENGINE
+    // This constantly loops or checks if the link ID changed compared to what's on the screen right now
     useEffect(() => {
+        const checkLinkSwitch = () => {
+            const activeLinkId = getLiveParamId();
+            
+            if (activeLinkId && activeLinkId !== currentShopId) {
+                console.log(`🔄 LINK SWITCH DETECTED! Changing from ${currentShopId} to ${activeLinkId}`);
+                setCurrentShopId(activeLinkId);
+                localStorage.setItem('phumyerng_active_shop_id', activeLinkId);
+            } else if (!currentShopId) {
+                // Initial load fallback tracker
+                const fallbackId = localStorage.getItem('phumyerng_active_shop_id') || "1";
+                setCurrentShopId(fallbackId);
+            }
+        };
+
+        checkLinkSwitch();
+
+        // 🔄 TELEGRAM BACK-FROM-BACKGROUND LIVE SYNC LISTENER
+        // If the user minimizes the bot and clicks a new store link, this forces React to catch the change instantly!
         if (tg) {
-            tg.ready();
-            tg.expand();
+            tg.onEvent('mainButtonClicked', checkLinkSwitch); 
+            // Check again when the viewport focuses
+            window.addEventListener('focus', checkLinkSwitch);
         }
 
-        const initializeApp = async () => {
+        return () => {
+            if (tg) tg.offEvent('mainButtonClicked', checkLinkSwitch);
+            window.removeEventListener('focus', checkLinkSwitch);
+        };
+    }, [currentShopId, getLiveParamId, tg]);
+
+    // 🚀 STEP 3: DATA FETCH TRIGGER PIPELINE
+    // This runs automatically whenever 'currentShopId' changes! 
+    useEffect(() => {
+        if (!currentShopId) return;
+
+        const loadShopData = async () => {
             try {
                 setLoading(true);
-
-                // Wait 150ms for Telegram SDK parameters to settle down safely
-                await new Promise((resolve) => setTimeout(resolve, 150));
-
-                const urlParams = new URLSearchParams(window.location.search);
                 const isTelegram = !!tg?.initData;
-
-                // 🚀 GET DYNAMIC VALUES FROM TELEGRAM INTERFACES
-                const tgStartParam = tg?.initDataUnsafe?.start_param;
-                const urlStartParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
-                const incomingParam = tgStartParam || urlStartParam;
-                
-                let targetId;
-                
-                if (incomingParam) {
-                    targetId = incomingParam;
-                    // Immediately overwrite local storage cache with the fresh ID
-                    localStorage.setItem('phumyerng_active_shop_id', targetId);
-                    console.log("🎯 Found Fresh Link Parameter:", targetId);
-                } else {
-                    // ⚠️ FIX: If there is NO parameter in the link, CLEAR out old cache 
-                    // instead of keeping it stuck on shop 28!
-                    const cachedId = localStorage.getItem('phumyerng_active_shop_id');
-                    targetId = cachedId ? cachedId : "1"; // Fallback to 1 if completely empty
-                    console.log("🔄 No Link Parameter Found. Using Cache/Default:", targetId);
-                }
 
                 // Handshake Authentication
                 let authResponse;
@@ -67,33 +85,34 @@ const ShopMainView = () => {
                 setUser(authResponse.data.user);
                 localStorage.setItem('token', authResponse.data.token);
 
-                // If no incoming link parameter was found anywhere, check if this user account owns a specific shop
-                if (!incomingParam && authResponse.data.owner_id) {
+                let targetId = currentShopId;
+                
+                // Final safety valve: If no param was passed at all, check if user profile owns an ID
+                if (targetId === "1" && authResponse.data.owner_id) {
                     targetId = authResponse.data.owner_id;
-                    localStorage.setItem('phumyerng_active_shop_id', targetId);
+                    setCurrentShopId(targetId);
                 }
 
-                console.HarrisLog = `🚀 Fetching target shop resources for ID: ${targetId}`;
-                console.log(console.HarrisLog);
+                console.log("🔥 Triggering fresh API payload requests for Shop ID:", targetId);
 
-                // Parallel Resource Fetch
+                // Fetch resources matching the target ID
                 const [productsRes, ownerRes] = await Promise.all([
                     api.get(`/shop/${targetId}/products`),
                     api.get(`/shop/${targetId}`)
                 ]);
 
                 setProducts(productsRes.data);
-                setOwner(ownerRes.data); 
+                setOwner(ownerRes.data);
 
             } catch (error) {
-                console.error("Critical Mini App Component Init Error:", error);
+                console.error("API Loader Error:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        initializeApp();
-    }, []);
+        loadShopData();
+    }, [currentShopId]); // 🚀 Dynamic dependency arrays update views on state change!
 
     if (loading) {
         return (
@@ -124,7 +143,7 @@ const ShopMainView = () => {
                     <div className="p-2">
                         <div className="flex justify-between items-center px-2 mt-2">
                             <h2 className="text-lg font-semibold text-gray-700">Available Products</h2>
-                            <span className="text-[10px] text-gray-400 font-bold">Shop ID: {owner?.id}</span>
+                            <span className="text-[10px] text-gray-400 font-bold">Active Shop ID: {owner?.id}</span>
                         </div>
                         <ProductList products={products} onAdd={addToCart} />
                     </div>
