@@ -11,14 +11,13 @@ const ShopMainView = () => {
     const [view, setView] = useState('shop'); 
     const tg = window.Telegram?.WebApp;
 
-    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]); // 🚀 Renamed from products to categories for clarity
     const [owner, setOwner] = useState(null); 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [currentShopId, setCurrentShopId] = useState(null); // 🚀 Track active ID in React State!
+    const [currentShopId, setCurrentShopId] = useState(null); 
 
     // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
-    // This looks at Telegram and the browser URL directly to see what the user is currently clicking
     const getLiveParamId = useCallback(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const tgParam = tg?.initDataUnsafe?.start_param;
@@ -28,7 +27,6 @@ const ShopMainView = () => {
     }, [tg]);
 
     // 🚀 STEP 2: RE-ROUTE WATCHER ENGINE
-    // This constantly loops or checks if the link ID changed compared to what's on the screen right now
     useEffect(() => {
         const checkLinkSwitch = () => {
             const activeLinkId = getLiveParamId();
@@ -38,7 +36,6 @@ const ShopMainView = () => {
                 setCurrentShopId(activeLinkId);
                 localStorage.setItem('phumyerng_active_shop_id', activeLinkId);
             } else if (!currentShopId) {
-                // Initial load fallback tracker
                 const fallbackId = localStorage.getItem('phumyerng_active_shop_id') || "1";
                 setCurrentShopId(fallbackId);
             }
@@ -46,11 +43,8 @@ const ShopMainView = () => {
 
         checkLinkSwitch();
 
-        // 🔄 TELEGRAM BACK-FROM-BACKGROUND LIVE SYNC LISTENER
-        // If the user minimizes the bot and clicks a new store link, this forces React to catch the change instantly!
         if (tg) {
             tg.onEvent('mainButtonClicked', checkLinkSwitch); 
-            // Check again when the viewport focuses
             window.addEventListener('focus', checkLinkSwitch);
         }
 
@@ -61,7 +55,6 @@ const ShopMainView = () => {
     }, [currentShopId, getLiveParamId, tg]);
 
     // 🚀 STEP 3: DATA FETCH TRIGGER PIPELINE
-    // This runs automatically whenever 'currentShopId' changes! 
     useEffect(() => {
         if (!currentShopId) return;
 
@@ -87,7 +80,6 @@ const ShopMainView = () => {
 
                 let targetId = currentShopId;
                 
-                // Final safety valve: If no param was passed at all, check if user profile owns an ID
                 if (targetId === "1" && authResponse.data.owner_id) {
                     targetId = authResponse.data.owner_id;
                     setCurrentShopId(targetId);
@@ -97,11 +89,11 @@ const ShopMainView = () => {
 
                 // Fetch resources matching the target ID
                 const [productsRes, ownerRes] = await Promise.all([
-                    api.get(`/shop/${targetId}/products`),
+                    api.get(`/shop/${targetId}/products`), // ⚡ This returns Category arrays with nested products!
                     api.get(`/shop/${targetId}`)
                 ]);
 
-                setProducts(productsRes.data);
+                setCategories(productsRes.data); // Save the category groupings cleanly
                 setOwner(ownerRes.data);
 
             } catch (error) {
@@ -112,7 +104,7 @@ const ShopMainView = () => {
         };
 
         loadShopData();
-    }, [currentShopId]); // 🚀 Dynamic dependency arrays update views on state change!
+    }, [currentShopId]); 
 
     if (loading) {
         return (
@@ -140,12 +132,44 @@ const ShopMainView = () => {
 
             {view === 'shop' ? (
                 <>
+                    {/* Search Field Integration */}
+                    <div className="p-2 px-4 mt-2">
+                        <input 
+                            type="text"
+                            placeholder="Search products..."
+                            className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                            onChange={async (e) => {
+                                const q = e.target.value;
+                                const res = await api.get(`/shop/${currentShopId}/products?search=${q}`);
+                                setCategories(res.data);
+                            }}
+                        />
+                    </div>
+
                     <div className="p-2">
-                        <div className="flex justify-between items-center px-2 mt-2">
-                            <h2 className="text-lg font-semibold text-gray-700">Available Products</h2>
+                        <div className="flex justify-between items-center px-2 mb-4">
+                            <h2 className="text-lg font-semibold text-gray-700">Menu</h2>
                             <span className="text-[10px] text-gray-400 font-bold">Active Shop ID: {owner?.id}</span>
                         </div>
-                        <ProductList products={products} onAdd={addToCart} />
+
+                        {/* 🚀 FIXED: NESTED CATEGORY LOOP RENDERING BLOCK */}
+                        {categories.length === 0 ? (
+                            <div className="text-center text-gray-400 py-8 text-sm">No items available.</div>
+                        ) : (
+                            categories.map((category) => (
+                                <div key={category.id} className="mb-6">
+                                    {category.products && category.products.length > 0 && (
+                                        <>
+                                            <h3 className="text-sm font-bold text-blue-600 px-2 mb-2 uppercase tracking-wider">
+                                                {category.name}
+                                            </h3>
+                                            {/* Pass the items array nested inside this category definition */}
+                                            <ProductList products={category.products} onAdd={addToCart} />
+                                        </>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
 
                     {cart.length > 0 && (
