@@ -6,41 +6,38 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
     const [customerLocation, setCustomerLocation] = useState(''); 
     const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmitOrder = async (e) => {
-        e.preventDefault();
-        if (cartItems.length === 0) return;
+   const handleSubmitOrder = async (e) => {
+    e.preventDefault();
+    if (cartItems.length === 0) return;
 
-        try {
-            setSubmitting(true);
+    try {
+        setSubmitting(true);
 
-            // 🎯 Match your Laravel Controller validation rules EXACTLY
-            const orderPayload = {
-                total_amount: totalAmount,
-                phone: customerPhone,
-                location: customerLocation,
-                items: cartItems.map(item => ({
-                    product_id: parseInt(item.id || item.product_id), // 🎯 Ensure the key matches 'product_id'
-                    quantity: parseInt(item.quantity),
-                    price: parseFloat(item.price)
-                }))
-            };
+        // 🎯 Ensure all required string parameters are mapped perfectly
+        const orderPayload = {
+            phone: customerPhone,
+            location: customerLocation,
+            items: cartItems.map(item => ({
+                product_id: parseInt(item.id || item.product_id), // 🎯 MUST be product_id
+                quantity: parseInt(item.quantity)
+            }))
+        };
 
-            console.log("✈️ Submitting clean order payload to backend:", orderPayload);
+        console.log("✈️ Ngrok Payload Package:", orderPayload);
 
-            // 🎯 FIXED URL PATHWAY: /api/shop/{ownerId}/checkout
-            const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload);
-            
-            if (response.status === 201 || response.status === 200) {
-                // Execute state reset triggers from your main view layout
-                onSuccess(); 
-            }
-        } catch (error) {
-            console.error("Mini App checkout submission failed: ", error);
-            alert(error.response?.data?.message || "Could not process order. Please try again.");
-        } finally {
-            setSubmitting(false);
+        // 🎯 Match your public route signature exactly
+        const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload);
+        
+        if (response.status === 201 || response.status === 200) {
+            onSuccess(); // Clear cart and close modal sheet
         }
-    };
+    } catch (error) {
+        console.error("❌ Checkout component caught an error:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Something went wrong processing your checkout.");
+    } finally {
+        setSubmitting(false);
+    }
+};
 
     return (
         <form onSubmit={handleSubmitOrder} className="space-y-4 text-gray-700">
