@@ -16,10 +16,10 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
             // 🎯 Match your Laravel Controller validation rules EXACTLY
             const orderPayload = {
                 total_amount: totalAmount,
-                phone: customerPhone || null,
-                location: customerLocation || null,
+                phone: customerPhone,
+                location: customerLocation,
                 items: cartItems.map(item => ({
-                    product_id: parseInt(item.id || item.product_id), // 🚀 FIXED: Converted 'id' to 'product_id'
+                    product_id: parseInt(item.id || item.product_id), // 🎯 Ensure the key matches 'product_id'
                     quantity: parseInt(item.quantity),
                     price: parseFloat(item.price)
                 }))
