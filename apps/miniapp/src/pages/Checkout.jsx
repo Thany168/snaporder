@@ -27,8 +27,8 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
 
             console.log("✈️ Submitting clean order payload to backend:", orderPayload);
 
-            // 🎯 FIXED URL PATHWAY: /api/shop/{ownerId}/orders
-            const response = await api.post(`/shop/${ownerId}/orders`, orderPayload);
+            // 🎯 FIXED URL PATHWAY: /api/shop/{ownerId}/checkout
+            const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload);
             
             if (response.status === 201 || response.status === 200) {
                 // Execute state reset triggers from your main view layout
