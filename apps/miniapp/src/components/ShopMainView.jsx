@@ -201,12 +201,12 @@ const ShopMainView = () => {
                         ownerId={owner?.id} 
                         clearCart={clearCart} 
                         onSuccess={() => {
-<<<<<<< HEAD
+
                             // 🚀 TARGET THE CORRECT STORAGE KEY NAME IMMEDIATELY
                             localStorage.removeItem("shopping_cart");
                             clearCart();
 
-=======
+
                             // 🚀 STEP 1: FORCE-WIPE ALL PERSISTENT STORAGE IMMEDIATELY
                             localStorage.removeItem("cart");
                             localStorage.removeItem("cart_items");
@@ -215,18 +215,14 @@ const ShopMainView = () => {
                             // 🚀 STEP 2: USE A MINIMAL TIMEOUT FOR SAFE HARD FLUSHING
                             // This short delay allows the React state to render empty (0) items 
                             // before the alert blocks the main thread!
->>>>>>> 1525e876e43d56e3e6bc600c214f565e93e67f21
                             setTimeout(() => {
                                 if (tg) {
                                     tg.showAlert("🛒 Order Sent Successfully to Telegram Group!");
                                 } else {
                                     alert("🛒 Order Sent Successfully to Telegram Group!");
                                 }
-<<<<<<< HEAD
-=======
-
                                 // 🚀 STEP 3: RELOAD SAFELY AFTER THE ALERT DISMISSAL
->>>>>>> 1525e876e43d56e3e6bc600c214f565e93e67f21
+
                                 window.location.reload();
                             }, 100); 
                         }}
