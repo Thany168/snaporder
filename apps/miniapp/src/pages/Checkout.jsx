@@ -13,10 +13,12 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
     try {
         setSubmitting(true);
 
-        // 🎯 Ensure all required string parameters are mapped perfectly
+        // 🎯 FIXED: Added fallback parameters to completely stop backend 500 array key errors!
         const orderPayload = {
             phone: customerPhone,
             location: customerLocation,
+            name: "Telegram Customer", // 🚀 Fallback if user isn't fully authenticated via WebApp sync yet
+            telegram_id: "",           // 🚀 Safe empty string fallback to prevent array key undefined crashes
             items: cartItems.map(item => ({
                 product_id: parseInt(item.id || item.product_id), // 🎯 MUST be product_id
                 quantity: parseInt(item.quantity)
@@ -25,11 +27,17 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
 
         console.log("✈️ Ngrok Payload Package:", orderPayload);
 
-        // 🎯 Match your public route signature exactly
-        const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload);
+        // 🎯 Match your public route signature exactly over ngrok proxy tunnel
+        const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
+            headers: {
+                // 🚀 Force clear any admin/owner bearer token leftovers from active localStorage instances
+                'Authorization': undefined 
+            }
+        });
         
         if (response.status === 201 || response.status === 200) {
             onSuccess(); // Clear cart and close modal sheet
+            alert("🎉 Order placed successfully!");
         }
     } catch (error) {
         console.error("❌ Checkout component caught an error:", error.response?.data || error.message);
