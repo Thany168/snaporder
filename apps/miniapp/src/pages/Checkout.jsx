@@ -13,12 +13,12 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
         try {
             setSubmitting(true);
 
+            // 🎯 STRICT PAYLOAD MATCH: Sends only what Laravel's CheckoutController validation requires
             const orderPayload = {
                 phone: customerPhone,
                 location: customerLocation,
                 name: "Telegram Customer",
                 telegram_id: "", 
-                // 🎯 FIXED MAP: Direct reference to item.product_id to match useCart hook schema perfectly
                 items: cartItems.map(item => ({
                     product_id: parseInt(item.product_id),
                     quantity: parseInt(item.quantity)
@@ -35,15 +35,17 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
             });
             
             if (response.status === 201 || response.status === 200) {
-                // Wipe cache storage states instantly
+                // 🚀 STEP 1: Wipe cache storage states instantly before alerts block the main thread
                 localStorage.removeItem("shopping_cart");
                 
+                // 🚀 STEP 2: Trigger custom useCart hook clear sequence
                 if (typeof clearCart === 'function') {
                     clearCart(); 
                 }
 
+                // 🚀 STEP 3: Hand over execution context back to parent ShopMainView callback
                 if (onSuccess) {
-                    onSuccess(); // Triggers the parent alert window and location reload
+                    onSuccess(); 
                 }
                 return; 
             }
@@ -62,7 +64,6 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                 <h3 className="font-bold text-gray-800 mb-2">Order Items</h3>
                 <div className="max-h-40 overflow-y-auto space-y-2 mb-3">
                     {cartItems.map((item) => (
-                        // 🎯 FIXED KEY: Using product_id as the element mapping index key
                         <div key={item.product_id} className="flex justify-between text-sm text-gray-600">
                             <span>{item.name} <b className="text-blue-500">x{item.quantity}</b></span>
                             <span>${(item.price * item.quantity).toFixed(2)}</span>

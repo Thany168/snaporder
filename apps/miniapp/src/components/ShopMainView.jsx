@@ -11,7 +11,7 @@ const ShopMainView = () => {
     const [view, setView] = useState('shop'); 
     const tg = window.Telegram?.WebApp;
 
-    const [categories, setCategories] = useState([]); // 🚀 Renamed from products to categories for clarity
+    const [categories, setCategories] = useState([]); // Renamed from products to categories for clarity
     const [owner, setOwner] = useState(null); 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -152,7 +152,7 @@ const ShopMainView = () => {
                             <span className="text-[10px] text-gray-400 font-bold">Active Shop ID: {owner?.id}</span>
                         </div>
 
-                        {/* 🚀 FIXED: NESTED CATEGORY LOOP RENDERING BLOCK */}
+                        {/* NESTED CATEGORY LOOP RENDERING BLOCK */}
                         {categories.length === 0 ? (
                             <div className="text-center text-gray-400 py-8 text-sm">No items available.</div>
                         ) : (
@@ -163,7 +163,6 @@ const ShopMainView = () => {
                                             <h3 className="text-sm font-bold text-blue-600 px-2 mb-2 uppercase tracking-wider">
                                                 {category.name}
                                             </h3>
-                                            {/* Pass the items array nested inside this category definition */}
                                             <ProductList products={category.products} onAdd={addToCart} />
                                         </>
                                     )}
@@ -195,36 +194,28 @@ const ShopMainView = () => {
                     
                     <h2 className="text-2xl font-bold mb-6 text-gray-800">Complete Your Order</h2>
                     
+                    {/* 🎯 FIXED BLOCK: Synchronized clearCart passing and safe asynchronous timing alerts */}
                     <Checkout 
                         cartItems={cart} 
                         totalAmount={totalAmount} 
                         ownerId={owner?.id} 
-                        clearCart={clearCart} 
+                        clearCart={clearCart}
                         onSuccess={() => {
-
-                            // 🚀 TARGET THE CORRECT STORAGE KEY NAME IMMEDIATELY
+                            // 🚀 1. Force-wipe cache tables and flush state arrays instantly
                             localStorage.removeItem("shopping_cart");
                             clearCart();
 
-
-                            // 🚀 STEP 1: FORCE-WIPE ALL PERSISTENT STORAGE IMMEDIATELY
-                            localStorage.removeItem("cart");
-                            localStorage.removeItem("cart_items");
-                            clearCart(); // Queues the React state flush
-
-                            // 🚀 STEP 2: USE A MINIMAL TIMEOUT FOR SAFE HARD FLUSHING
-                            // This short delay allows the React state to render empty (0) items 
-                            // before the alert blocks the main thread!
+                            // 🚀 2. Timeout buffer keeps threads open to render (0) state before freeze alerts trigger
                             setTimeout(() => {
                                 if (tg) {
                                     tg.showAlert("🛒 Order Sent Successfully to Telegram Group!");
                                 } else {
                                     alert("🛒 Order Sent Successfully to Telegram Group!");
                                 }
-                                // 🚀 STEP 3: RELOAD SAFELY AFTER THE ALERT DISMISSAL
-
+                                
+                                // 🚀 3. Fresh window refresh cycle to finish clean start state state variables
                                 window.location.reload();
-                            }, 100); 
+                            }, 100);
                         }}
                     />
                 </div>

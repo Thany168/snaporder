@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export const useCart = () => {
-  // 🎯 FIX 1: Read directly inside the initializer function. No race conditions!
+  // 🎯 FIXED: Read directly from localStorage inside initialization to prevent state-sync loops!
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem('shopping_cart');
     return savedCart ? JSON.parse(savedCart) : [];
@@ -28,7 +28,7 @@ export const useCart = () => {
     setCart(prev => prev.filter(item => item.product_id !== productId));
   };
 
-  // 🎯 FIX 2: Explicitly wipe the exact matching storage key string name
+  // 🎯 FIXED: Explicitly clear the exact matching localStorage string name right away
   const clearCart = () => {
     localStorage.removeItem('shopping_cart');
     setCart([]);
