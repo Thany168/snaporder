@@ -201,13 +201,24 @@ const ShopMainView = () => {
                         ownerId={owner?.id} 
                         clearCart={clearCart} 
                         onSuccess={() => {
-                            clearCart();
-                            setView('shop');
-                            if (tg) {
-                                tg.showAlert("Order placed successfully!");
-                            } else {
-                                alert("Order placed successfully!");
-                            }
+                            // 🚀 STEP 1: FORCE-WIPE ALL PERSISTENT STORAGE IMMEDIATELY
+                            localStorage.removeItem("cart");
+                            localStorage.removeItem("cart_items");
+                            clearCart(); // Queues the React state flush
+
+                            // 🚀 STEP 2: USE A MINIMAL TIMEOUT FOR SAFE HARD FLUSHING
+                            // This short delay allows the React state to render empty (0) items 
+                            // before the alert blocks the main thread!
+                            setTimeout(() => {
+                                if (tg) {
+                                    tg.showAlert("🛒 Order Sent Successfully to Telegram Group!");
+                                } else {
+                                    alert("🛒 Order Sent Successfully to Telegram Group!");
+                                }
+
+                                // 🚀 STEP 3: RELOAD SAFELY AFTER THE ALERT DISMISSAL
+                                window.location.reload();
+                            }, 100); 
                         }}
                     />
                 </div>
