@@ -16,7 +16,7 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
         const orderPayload = {
             phone: customerPhone,
             location: customerLocation,
-            name: "Telegram Customer",
+            name: "Customer Name", 
             telegram_id: "", 
             items: cartItems.map(item => ({
                 product_id: parseInt(item.id || item.product_id),
@@ -24,19 +24,21 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
             }))
         };
 
-        console.log("✈️ Sending Checkout Payload:", orderPayload);
-
-        // 🚀 Hit the public checkout endpoint
+        // 🚀 Send order to public endpoint over Ngrok tunnel
         const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
             headers: {
-                'Authorization': undefined // Keep it clean as a guest request
+                'Authorization': undefined // Keep it completely public
             }
         });
         
-        // 🎯 THE FIX: Skip any payment step calls completely!
         if (response.status === 201 || response.status === 200) {
-            alert("🎉 Order Placed Successfully! Sent to shop owner group.");
-            onSuccess(); // Directly clears cart, closes sheet, and finishes flow!
+            // 🎯 CRITICAL: Show success message right away and clear the state!
+            alert("🛒 Order Sent Successfully to Telegram Group!");
+            
+            if (onSuccess) {
+                onSuccess(); // This clears the cart array and closes the checkout modal view sheet
+            }
+            return; // 🚀 STOP executing code here so it doesn't move to payment steps!
         }
     } catch (error) {
         console.error("❌ Checkout caught an error:", error.response?.data || error.message);
