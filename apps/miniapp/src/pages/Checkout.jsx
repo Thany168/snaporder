@@ -6,7 +6,8 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
     const [customerLocation, setCustomerLocation] = useState(''); 
     const [submitting, setSubmitting] = useState(false);
 
-   const handleSubmitOrder = async (e) => {
+   // 🎯 Ensure your order submission function handles the success stream cleanly:
+const handleSubmitOrder = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) return;
 
@@ -16,7 +17,7 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
         const orderPayload = {
             phone: customerPhone,
             location: customerLocation,
-            name: "Customer Name", 
+            name: "Telegram Customer",
             telegram_id: "", 
             items: cartItems.map(item => ({
                 product_id: parseInt(item.id || item.product_id),
@@ -24,24 +25,35 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
             }))
         };
 
-        // 🚀 Send order to public endpoint over Ngrok tunnel
+        // Send order payload directly to your public Ngrok api endpoint tunnel
         const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
             headers: {
-                'Authorization': undefined // Keep it completely public
+                'Authorization': undefined // Keep request clean from any conflicting token headers
             }
         });
         
         if (response.status === 201 || response.status === 200) {
-            // 🎯 CRITICAL: Show success message right away and clear the state!
             alert("🛒 Order Sent Successfully to Telegram Group!");
             
-            if (onSuccess) {
-                onSuccess(); // This clears the cart array and closes the checkout modal view sheet
+            // 🎯 THE FIX: Clear the state variables right here!
+            // If your parent component passes a clearCart or setCart function:
+            if (typeof clearCart === 'function') {
+                clearCart(); // Wipes the array back to []
+            } else if (typeof setCartItems === 'function') {
+                setCartItems([]); // Clears items instantly
             }
-            return; // 🚀 STOP executing code here so it doesn't move to payment steps!
+
+            // Fallback: If you are storing items inside browser localStorage, clear it too!
+            localStorage.removeItem("cart");
+            localStorage.removeItem("cart_items");
+
+            if (onSuccess) {
+                onSuccess(); // Closes down the drawer view modal panel sheet
+            }
+            return; 
         }
     } catch (error) {
-        console.error("❌ Checkout caught an error:", error.response?.data || error.message);
+        console.error("❌ Checkout system error trace:", error.response?.data || error.message);
         alert(error.response?.data?.message || "Something went wrong processing your checkout.");
     } finally {
         setSubmitting(false);
