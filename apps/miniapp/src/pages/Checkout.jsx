@@ -1,64 +1,61 @@
 import React, { useState } from 'react';
-import api from '../api/axios'; // Ensure this points to your standard Axios instance setup
+import api from '../api/axios'; 
 
-const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
+// 🎯 FIXED: Destructured 'clearCart' directly into the component parameters list!
+const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => {
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerLocation, setCustomerLocation] = useState(''); 
     const [submitting, setSubmitting] = useState(false);
 
-   // 🎯 Ensure your order submission function handles the success stream cleanly:
-const handleSubmitOrder = async (e) => {
-    e.preventDefault();
-    if (cartItems.length === 0) return;
+    const handleSubmitOrder = async (e) => {
+        e.preventDefault();
+        if (cartItems.length === 0) return;
 
-    try {
-        setSubmitting(true);
+        try {
+            setSubmitting(true);
 
-        const orderPayload = {
-            phone: customerPhone,
-            location: customerLocation,
-            name: "Telegram Customer",
-            telegram_id: "", 
-            items: cartItems.map(item => ({
-                product_id: parseInt(item.id || item.product_id),
-                quantity: parseInt(item.quantity)
-            }))
-        };
+            const orderPayload = {
+                phone: customerPhone,
+                location: customerLocation,
+                name: "Telegram Customer",
+                telegram_id: "", 
+                items: cartItems.map(item => ({
+                    product_id: parseInt(item.id || item.product_id),
+                    quantity: parseInt(item.quantity)
+                }))
+            };
 
-        // Send order payload directly to your public Ngrok api endpoint tunnel
-        const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
-            headers: {
-                'Authorization': undefined // Keep request clean from any conflicting token headers
-            }
-        });
-        
-        if (response.status === 201 || response.status === 200) {
-            alert("🛒 Order Sent Successfully to Telegram Group!");
+            // Send order payload directly to your public backend api endpoint 
+            const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
+                headers: {
+                    'Authorization': undefined // Keep request clean from any conflicting token headers
+                }
+            });
             
-            // 🎯 THE FIX: Clear the state variables right here!
-            // If your parent component passes a clearCart or setCart function:
-            if (typeof clearCart === 'function') {
-                clearCart(); // Wipes the array back to []
-            } else if (typeof setCartItems === 'function') {
-                setCartItems([]); // Clears items instantly
-            }
+            if (response.status === 201 || response.status === 200) {
+                // 🚀 WIPE STATE INSTANTLY: This triggers the custom useCart hook immediately on success line!
+                if (typeof clearCart === 'function') {
+                    clearCart(); 
+                }
 
-            // Fallback: If you are storing items inside browser localStorage, clear it too!
-            localStorage.removeItem("cart");
-            localStorage.removeItem("cart_items");
+                // Clean out persistent cache records from local browser memory tables
+                localStorage.removeItem("cart");
+                localStorage.removeItem("cart_items");
 
-            if (onSuccess) {
-                onSuccess(); // Closes down the drawer view modal panel sheet
+                alert("🛒 Order Sent Successfully to Telegram Group!");
+
+                if (onSuccess) {
+                    onSuccess(); // Re-routes view state back to 'shop' menu grid cleanly
+                }
+                return; 
             }
-            return; 
+        } catch (error) {
+            console.error("❌ Checkout system error trace:", error.response?.data || error.message);
+            alert(error.response?.data?.message || "Something went wrong processing your checkout.");
+        } finally {
+            setSubmitting(false);
         }
-    } catch (error) {
-        console.error("❌ Checkout system error trace:", error.response?.data || error.message);
-        alert(error.response?.data?.message || "Something went wrong processing your checkout.");
-    } finally {
-        setSubmitting(false);
-    }
-};
+    };
 
     return (
         <form onSubmit={handleSubmitOrder} className="space-y-4 text-gray-700">
