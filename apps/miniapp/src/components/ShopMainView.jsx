@@ -175,14 +175,20 @@ const ShopMainView = () => {
                         cartItems={cart} 
                         totalAmount={totalAmount} 
                         ownerId={owner?.id} 
+                        clearCart={clearCart} 
                         onSuccess={() => {
+                            // 🚀 TARGET THE CORRECT STORAGE KEY NAME IMMEDIATELY
+                            localStorage.removeItem("shopping_cart");
                             clearCart();
-                            setView('shop');
-                            if (tg) {
-                                tg.showAlert("Order placed successfully!");
-                            } else {
-                                alert("Order placed successfully!");
-                            }
+
+                            setTimeout(() => {
+                                if (tg) {
+                                    tg.showAlert("🛒 Order Sent Successfully to Telegram Group!");
+                                } else {
+                                    alert("🛒 Order Sent Successfully to Telegram Group!");
+                                }
+                                window.location.reload();
+                            }, 100); 
                         }}
                     />
                 </div>

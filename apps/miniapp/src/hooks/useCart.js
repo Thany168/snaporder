@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 
 export const useCart = () => {
-  const [cart, setCart] = useState([]);
-
-  // Load cart from localStorage so it doesn't disappear on refresh
-  useEffect(() => {
+  // 🎯 FIX 1: Read directly inside the initializer function. No race conditions!
+  const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem('shopping_cart');
-    if (savedCart) setCart(JSON.parse(savedCart));
-  }, []);
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
 
   // Save cart whenever it changes
   useEffect(() => {
@@ -30,7 +28,11 @@ export const useCart = () => {
     setCart(prev => prev.filter(item => item.product_id !== productId));
   };
 
-  const clearCart = () => setCart([]);
+  // 🎯 FIX 2: Explicitly wipe the exact matching storage key string name
+  const clearCart = () => {
+    localStorage.removeItem('shopping_cart');
+    setCart([]);
+  };
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
