@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api/axios'; 
 
-// 🎯 FIXED: Destructured 'clearCart' directly into the component parameters list!
 const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => {
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerLocation, setCustomerLocation] = useState(''); 
@@ -19,11 +18,14 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                 location: customerLocation,
                 name: "Telegram Customer",
                 telegram_id: "", 
+                // 🎯 FIXED MAP: Direct reference to item.product_id to match useCart hook schema perfectly
                 items: cartItems.map(item => ({
-                    product_id: parseInt(item.id || item.product_id),
+                    product_id: parseInt(item.product_id),
                     quantity: parseInt(item.quantity)
                 }))
             };
+
+            console.log("📦 Sending direct payload data structure to backend:", orderPayload);
 
             // Send order payload directly to your public backend api endpoint 
             const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
@@ -33,19 +35,15 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
             });
             
             if (response.status === 201 || response.status === 200) {
-                // 🚀 WIPE STATE INSTANTLY: This triggers the custom useCart hook immediately on success line!
+                // Wipe cache storage states instantly
+                localStorage.removeItem("shopping_cart");
+                
                 if (typeof clearCart === 'function') {
                     clearCart(); 
                 }
 
-                // Clean out persistent cache records from local browser memory tables
-                localStorage.removeItem("cart");
-                localStorage.removeItem("cart_items");
-
-                alert("🛒 Order Sent Successfully to Telegram Group!");
-
                 if (onSuccess) {
-                    onSuccess(); // Re-routes view state back to 'shop' menu grid cleanly
+                    onSuccess(); // Triggers the parent alert window and location reload
                 }
                 return; 
             }
@@ -64,7 +62,8 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                 <h3 className="font-bold text-gray-800 mb-2">Order Items</h3>
                 <div className="max-h-40 overflow-y-auto space-y-2 mb-3">
                     {cartItems.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm text-gray-600">
+                        // 🎯 FIXED KEY: Using product_id as the element mapping index key
+                        <div key={item.product_id} className="flex justify-between text-sm text-gray-600">
                             <span>{item.name} <b className="text-blue-500">x{item.quantity}</b></span>
                             <span>${(item.price * item.quantity).toFixed(2)}</span>
                         </div>
@@ -93,6 +92,7 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                 <label className="text-xs font-bold text-gray-400 uppercase">Delivery Location / Table Code</label>
                 <input 
                     type="text" 
+                    required
                     placeholder="e.g., Table 05 / Street 200 Room B"
                     value={customerLocation} 
                     onChange={(e) => setCustomerLocation(e.target.value)}
