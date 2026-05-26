@@ -2,15 +2,16 @@ import axios from "axios";
 
 // 🚀 FIXED FOR PRODUCTION MIXED CONTENT RULES:
 // Switch from localhost back to your secure HTTPS ngrok address while testing live client deployments!
-const API_BASE = "https://stinging-unknowing-dry.ngrok-free.dev/api/admin";
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL}`;
 
 const getHeaders = () => {
   const token = localStorage.getItem("token");
   return {
     headers: {
       Authorization: token ? `Bearer ${token}` : "",
-      "ngrok-skip-browser-warning": "true", 
-      Accept: "application/json", 
+      "ngrok-skip-browser-warning": "true",
+      localhost: "true",
+      Accept: "application/json",
       "Content-Type": "application/json",
     },
   };
@@ -34,7 +35,7 @@ export const ownerService = {
     const res = await axios.post(
       `${API_BASE}/owners/${id}/toggle-status`,
       { status },
-      getHeaders()
+      getHeaders(),
     );
     return res?.data ? res.data : res;
   },
