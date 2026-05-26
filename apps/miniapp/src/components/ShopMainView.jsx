@@ -199,6 +199,7 @@ const ShopMainView = () => {
                         cartItems={cart} 
                         totalAmount={totalAmount} 
                         ownerId={owner?.id} 
+                        clearCart={clearCart} 
                         onSuccess={() => {
                             clearCart();
                             setView('shop');
