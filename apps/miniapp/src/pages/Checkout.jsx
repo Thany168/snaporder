@@ -13,34 +13,33 @@ const Checkout = ({ cartItems, totalAmount, ownerId, onSuccess }) => {
     try {
         setSubmitting(true);
 
-        // 🎯 FIXED: Added fallback parameters to completely stop backend 500 array key errors!
         const orderPayload = {
             phone: customerPhone,
             location: customerLocation,
-            name: "Telegram Customer", // 🚀 Fallback if user isn't fully authenticated via WebApp sync yet
-            telegram_id: "",           // 🚀 Safe empty string fallback to prevent array key undefined crashes
+            name: "Telegram Customer",
+            telegram_id: "", 
             items: cartItems.map(item => ({
-                product_id: parseInt(item.id || item.product_id), // 🎯 MUST be product_id
+                product_id: parseInt(item.id || item.product_id),
                 quantity: parseInt(item.quantity)
             }))
         };
 
-        console.log("✈️ Ngrok Payload Package:", orderPayload);
+        console.log("✈️ Sending Checkout Payload:", orderPayload);
 
-        // 🎯 Match your public route signature exactly over ngrok proxy tunnel
+        // 🚀 Hit the public checkout endpoint
         const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
             headers: {
-                // 🚀 Force clear any admin/owner bearer token leftovers from active localStorage instances
-                'Authorization': undefined 
+                'Authorization': undefined // Keep it clean as a guest request
             }
         });
         
+        // 🎯 THE FIX: Skip any payment step calls completely!
         if (response.status === 201 || response.status === 200) {
-            onSuccess(); // Clear cart and close modal sheet
-            alert("🎉 Order placed successfully!");
+            alert("🎉 Order Placed Successfully! Sent to shop owner group.");
+            onSuccess(); // Directly clears cart, closes sheet, and finishes flow!
         }
     } catch (error) {
-        console.error("❌ Checkout component caught an error:", error.response?.data || error.message);
+        console.error("❌ Checkout caught an error:", error.response?.data || error.message);
         alert(error.response?.data?.message || "Something went wrong processing your checkout.");
     } finally {
         setSubmitting(false);
