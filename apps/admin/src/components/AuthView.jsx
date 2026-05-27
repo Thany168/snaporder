@@ -10,7 +10,7 @@ const AuthView = ({ onAuthSuccess }) => {
   const [otpCode, setOtpCode] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const baseApiUrl = `${import.meta.env.VITE_API_BASE_URL}/admin`;
+  const baseApiUrl = `${import.meta.env.VITE_API_BASE_URL}`;
 
   // Handle Password Submission Step
   const handleLoginSubmit = async (e) => {
