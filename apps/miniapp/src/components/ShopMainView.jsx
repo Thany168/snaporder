@@ -11,11 +11,15 @@ const ShopMainView = () => {
     const [view, setView] = useState('shop'); 
     const tg = window.Telegram?.WebApp;
 
-    const [categories, setCategories] = useState([]); // Renamed from products to categories for clarity
+    const [categories, setCategories] = useState([]); 
     const [owner, setOwner] = useState(null); 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [currentShopId, setCurrentShopId] = useState(null); 
+
+    // 🎨 DYNAMIC BRAND COLORS: Pulling from owner portal settings with standard fallbacks
+    const primaryColor = owner?.brand_color || '#2563eb'; // Default Blue-600
+    const lightBgColor = owner?.brand_color ? `${owner.brand_color}15` : '#dbeafe'; // Tinted background for badges
 
     // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
     const getLiveParamId = useCallback(() => {
@@ -63,7 +67,6 @@ const ShopMainView = () => {
                 setLoading(true);
                 const isTelegram = !!tg?.initData;
 
-                // Handshake Authentication
                 let authResponse;
                 if (isTelegram) {
                     authResponse = await api.post('/auth/telegram', { init_data: tg.initData });
@@ -87,13 +90,12 @@ const ShopMainView = () => {
 
                 console.log("🔥 Triggering fresh API payload requests for Shop ID:", targetId);
 
-                // Fetch resources matching the target ID
                 const [productsRes, ownerRes] = await Promise.all([
-                    api.get(`/shop/${targetId}/products`), // ⚡ This returns Category arrays with nested products!
+                    api.get(`/shop/${targetId}/products`), 
                     api.get(`/shop/${targetId}`)
                 ]);
 
-                setCategories(productsRes.data); // Save the category groupings cleanly
+                setCategories(productsRes.data); 
                 setOwner(ownerRes.data);
 
             } catch (error) {
@@ -109,35 +111,65 @@ const ShopMainView = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderTopColor: primaryColor }}></div>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-            <header className="p-4 bg-white shadow-sm flex justify-between items-center sticky top-0 z-10">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-800">
-                        {owner?.shop_name || 'Loading Shop...'}
-                    </h1>
-                    {owner?.shop_description && (
-                        <p className="text-xs text-gray-500">{owner.shop_description}</p>
-                    )}
+            
+            {/* 🖼️ IMPROVED: High-End Dynamic Brand Header & Cover Banner */}
+            <header className="relative bg-white shadow-sm border-b border-gray-100">
+                {/* Store Cover Image Banner */}
+                <div className="w-full h-32 bg-gray-200 overflow-hidden relative">
+                    <img 
+                        src={owner?.cover_url || 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600'} 
+                        alt="Shop Cover" 
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
-                <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                    Hi, {user?.name || 'Guest'}
-                </span>
+
+                {/* Profile Avatar & Info Overlay */}
+                <div className="p-4 flex items-end -mt-12 relative z-10 px-4">
+                    <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
+                        <img 
+                            src={owner?.logo_url || 'https://images.placeholder.co/150'} 
+                            alt="Shop Logo" 
+                            className="w-full h-full object-cover rounded-xl"
+                        />
+                    </div>
+                    
+                    <div className="ml-3 mb-1 flex-1">
+                        <h1 className="text-xl font-bold text-white leading-tight drop-shadow-md">
+                            {owner?.shop_name || 'Loading Shop...'}
+                        </h1>
+                        <p className="text-xs text-gray-500 line-clamp-1 mt-3 font-medium">
+                            {owner?.shop_description || 'Welcome to our digital storefront!'}
+                        </p>
+                    </div>
+                    
+                    <span 
+                        style={{ backgroundColor: lightBgColor, color: primaryColor }}
+                        className="text-xs px-3 py-1.5 rounded-full font-bold flex-shrink-0 self-center mt-6 transition-all"
+                    >
+                        Hi, {user?.name?.split(' ')[0] || 'Guest'}
+                    </span>
+                </div>
             </header>
 
             {view === 'shop' ? (
                 <>
                     {/* Search Field Integration */}
-                    <div className="p-2 px-4 mt-2">
+                    <div className="p-2 px-4 mt-3">
                         <input 
                             type="text"
                             placeholder="Search products..."
-                            className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
+                            className="w-full p-3.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white shadow-sm transition-all"
+                            style={{ '--tw-focus-border-color': primaryColor }}
+                            onFocus={(e) => e.target.style.borderColor = primaryColor}
+                            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                             onChange={async (e) => {
                                 const q = e.target.value;
                                 const res = await api.get(`/shop/${currentShopId}/products?search=${q}`);
@@ -146,24 +178,44 @@ const ShopMainView = () => {
                         />
                     </div>
 
+                    {/* 💤 AUTOMATION UPGRADE: Store Open/Closed Dynamic Notice Banner */}
+                    {owner?.is_open === false && (
+                        <div className="mx-4 mt-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center shadow-sm">
+                            <span className="text-xl">💤</span>
+                            <h4 className="text-sm font-bold text-amber-800 mt-1">Store is Closed</h4>
+                            <p className="text-[11px] text-amber-600 mt-0.5">The merchant is currently not accepting automated checkout orders.</p>
+                        </div>
+                    )}
+
                     <div className="p-2">
-                        <div className="flex justify-between items-center px-2 mb-4">
-                            <h2 className="text-lg font-semibold text-gray-700">Menu</h2>
-                            <span className="text-[10px] text-gray-400 font-bold">Active Shop ID: {owner?.id}</span>
+                        <div className="flex justify-between items-center px-2 mb-3 mt-1">
+                            <h2 className="text-base font-bold text-gray-800 uppercase tracking-wide">Menu Menu</h2>
+                            <span className="text-[10px] bg-gray-200/70 text-gray-500 px-2 py-0.5 rounded-md font-bold">ID: {owner?.id}</span>
                         </div>
 
                         {/* NESTED CATEGORY LOOP RENDERING BLOCK */}
                         {categories.length === 0 ? (
-                            <div className="text-center text-gray-400 py-8 text-sm">No items available.</div>
+                            <div className="text-center text-gray-400 py-12 text-sm font-medium">No items available at this time.</div>
                         ) : (
                             categories.map((category) => (
                                 <div key={category.id} className="mb-6">
                                     {category.products && category.products.length > 0 && (
                                         <>
-                                            <h3 className="text-sm font-bold text-blue-600 px-2 mb-2 uppercase tracking-wider">
+                                            {/* Category Heading themed dynamically */}
+                                            <h3 
+                                                style={{ color: primaryColor }}
+                                                className="text-xs font-black px-2 mb-2.5 uppercase tracking-wider"
+                                            >
                                                 {category.name}
                                             </h3>
-                                            <ProductList products={category.products} onAdd={addToCart} />
+                                            
+                                            {/* 🎯 LAYOUT UPGRADE: Passing the Owner dashboard configuration down to ProductList */}
+                                            <ProductList 
+                                                products={category.products} 
+                                                onAdd={addToCart} 
+                                                layoutType={owner?.layout_type || 'list'} // Sends 'grid' or 'list' layout context
+                                                primaryColor={primaryColor}
+                                            />
                                         </>
                                     )}
                                 </div>
@@ -171,14 +223,16 @@ const ShopMainView = () => {
                         )}
                     </div>
 
+                    {/* 🎨 DYNAMIC BUTTON: Theme color dynamically bound to checkout launcher banner */}
                     {cart.length > 0 && (
-                        <div className="fixed bottom-0 w-full p-4 bg-white border-t shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.1)] z-20">
+                        <div className="fixed bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.08)] z-20">
                             <button 
                                 onClick={() => setView('checkout')}
-                                className="w-full bg-blue-600 active:bg-blue-700 text-white py-4 rounded-2xl font-bold flex justify-between px-6 transition-all shadow-lg"
+                                style={{ backgroundColor: primaryColor }}
+                                className="w-full text-white py-4 rounded-2xl font-bold flex justify-between px-6 transition-all shadow-md active:scale-[0.99]"
                             >
-                                <span>View My Cart ({cart.length})</span>
-                                <span>${totalAmount.toFixed(2)}</span>
+                                <span className="tracking-wide">View My Cart ({cart.length})</span>
+                                <span className="font-extrabold">${totalAmount.toFixed(2)}</span>
                             </button>
                         </div>
                     )}
@@ -187,33 +241,30 @@ const ShopMainView = () => {
                 <div className="p-4">
                     <button 
                         onClick={() => setView('shop')} 
-                        className="mb-6 flex items-center text-blue-600 font-semibold"
+                        style={{ color: primaryColor }}
+                        className="mb-6 flex items-center font-bold text-sm transition-all active:translate-x-[-2px]"
                     >
-                        <span className="mr-2 text-xl">←</span> Back to Shop
+                        <span className="mr-2 text-xl">←</span> Back to Shop Menu
                     </button>
                     
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Complete Your Order</h2>
+                    <h2 className="text-2xl font-black mb-5 text-gray-900 tracking-tight">Complete Your Order</h2>
                     
-                    {/* 🎯 FIXED BLOCK: Synchronized clearCart passing and safe asynchronous timing alerts */}
                     <Checkout 
                         cartItems={cart} 
                         totalAmount={totalAmount} 
                         ownerId={owner?.id} 
                         clearCart={clearCart}
+                        primaryColor={primaryColor} // Inject style bindings directly into the forms too
                         onSuccess={() => {
-                            // 🚀 1. Force-wipe cache tables and flush state arrays instantly
                             localStorage.removeItem("shopping_cart");
                             clearCart();
 
-                            // 🚀 2. Timeout buffer keeps threads open to render (0) state before freeze alerts trigger
                             setTimeout(() => {
                                 if (tg) {
                                     tg.showAlert("🛒 Order Sent Successfully to Telegram Group!");
                                 } else {
                                     alert("🛒 Order Sent Successfully to Telegram Group!");
                                 }
-                                
-                                // 🚀 3. Fresh window refresh cycle to finish clean start state state variables
                                 window.location.reload();
                             }, 100);
                         }}
