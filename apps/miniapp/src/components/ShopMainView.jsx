@@ -77,7 +77,6 @@ const ShopMainView = () => {
                         role: "owner"
                     });
                 }
-
                 setUser(authResponse.data.user);
                 localStorage.setItem('token', authResponse.data.token);
 

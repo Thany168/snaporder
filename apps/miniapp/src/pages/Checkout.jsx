@@ -100,7 +100,6 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                     className="w-full p-4 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
                 />
             </div>
-
             <button 
                 type="submit" 
                 disabled={submitting || cartItems.length === 0}
