@@ -130,7 +130,7 @@ const ShopMainView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* 🖼️ IMPROVED: High-End Dynamic Brand Header & Cover Banner */}
+      {/* 🖼️ HIGH-END DYNAMIC BRAND HEADER */}
       <header className="relative bg-white shadow-sm border-b border-gray-100">
         {/* Store Cover Image Banner */}
         <div className="w-full h-32 bg-gray-200 overflow-hidden relative">
@@ -145,16 +145,21 @@ const ShopMainView = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
 
-        {/* Profile Avatar & Info Overlay */}
-        <div className="p-4 flex items-end -mt-12 relative z-10 px-4">
+        {/* Profile Avatar & Info Row Overlay */}
+        <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full">
+          {/* Avatar Container Box */}
           <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
             <img
-              src={owner?.logo_url || "https://images.placeholder.co/150"}
+              src={owner?.logo_url || "https://placeholder.co/150"}
               alt="Shop Logo"
               className="w-full h-full object-cover rounded-xl"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/150";
+              }}
             />
           </div>
 
+          {/* Shop Meta Details Block */}
           <div className="ml-3 mb-1 flex-1">
             <h1 className="text-xl font-bold text-white leading-tight drop-shadow-md">
               {owner?.shop_name || "Loading Shop..."}
@@ -164,6 +169,7 @@ const ShopMainView = () => {
             </p>
           </div>
 
+          {/* Customer Dynamic Badge Pill */}
           <span
             style={{ backgroundColor: lightBgColor, color: primaryColor }}
             className="text-xs px-3 py-1.5 rounded-full font-bold flex-shrink-0 self-center mt-6 transition-all"
@@ -194,7 +200,7 @@ const ShopMainView = () => {
             />
           </div>
 
-          {/* 💤 AUTOMATION UPGRADE: Store Open/Closed Dynamic Notice Banner */}
+          {/* 💤 AUTOMATION UPGRADE: Store Open/Closed Notice Banner */}
           {owner?.is_open === false && (
             <div className="mx-4 mt-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center shadow-sm">
               <span className="text-xl">💤</span>
@@ -236,11 +242,11 @@ const ShopMainView = () => {
                         {category.name}
                       </h3>
 
-                      {/* 🎯 LAYOUT UPGRADE: Passing the Owner dashboard configuration down to ProductList */}
+                      {/* LAYOUT UPGRADE: Dynamic grid vs list injection */}
                       <ProductList
                         products={category.products}
                         onAdd={addToCart}
-                        layoutType={owner?.layout_type || "list"} // Sends 'grid' or 'list' layout context
+                        layoutType={owner?.layout_type || "list"}
                         primaryColor={primaryColor}
                       />
                     </>
@@ -250,7 +256,7 @@ const ShopMainView = () => {
             )}
           </div>
 
-          {/* 🎨 DYNAMIC BUTTON: Theme color dynamically bound to checkout launcher banner */}
+          {/* 🎨 DYNAMIC BUTTON: Checkout launcher banner */}
           {cart.length > 0 && (
             <div className="fixed bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.08)] z-20">
               <button
@@ -287,7 +293,7 @@ const ShopMainView = () => {
             totalAmount={totalAmount}
             ownerId={owner?.id}
             clearCart={clearCart}
-            primaryColor={primaryColor} // Inject style bindings directly into the forms too
+            primaryColor={primaryColor}
             onSuccess={() => {
               localStorage.removeItem("shopping_cart");
               clearCart();
