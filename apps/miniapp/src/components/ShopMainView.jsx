@@ -25,18 +25,21 @@ const ShopMainView = () => {
 
   // 🌐 BASE PATH FORMATTER: Turns database path fragments into real absolute URLs
   const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; // Fallback placeholder if entirely missing
+    if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
     
-    // If it's already a full web path link, return it directly
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
       return imagePath;
     }
     
-    // Extracts your API root link from your Axios instance configuration
-    const backendRoot = api.defaults.baseURL?.replace("/api", "") || "http://localhost:8000";
+    const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
     
-    // Clean out any duplicate slashes and merge paths cleanly
-    return `${backendRoot}/${imagePath.replace(/^\//, "")}`;
+    // 🎯 FIX: If the path is a logo path that doesn't include 'storage/', force it into the public storage path link
+    let cleanPath = imagePath.replace(/^\//, "");
+    if (!cleanPath.startsWith("storage/") && !cleanPath.startsWith("public/")) {
+      cleanPath = `storage/${cleanPath}`;
+    }
+    
+    return `${backendRoot}/${cleanPath}`;
   };
 
   // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
