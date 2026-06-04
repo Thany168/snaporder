@@ -23,6 +23,22 @@ const ShopMainView = () => {
     ? `${owner.brand_color}15`
     : "#dbeafe"; // Tinted background for badges
 
+  // 🌐 BASE PATH FORMATTER: Turns database path fragments into real absolute URLs
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; // Fallback placeholder if entirely missing
+    
+    // If it's already a full web path link, return it directly
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+      return imagePath;
+    }
+    
+    // Extracts your API root link from your Axios instance configuration
+    const backendRoot = api.defaults.baseURL?.replace("/api", "") || "http://localhost:8000";
+    
+    // Clean out any duplicate slashes and merge paths cleanly
+    return `${backendRoot}/${imagePath.replace(/^\//, "")}`;
+  };
+
   // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
   const getLiveParamId = useCallback(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -135,44 +151,47 @@ const ShopMainView = () => {
         {/* Store Cover Image Banner */}
         <div className="w-full h-32 bg-gray-200 overflow-hidden relative">
           <img
-            src={
-              owner?.cover_url ||
-              "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"
-            }
+            src={getFullImageUrl(owner?.cover_url)}
             alt="Shop Cover"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
 
         {/* Profile Avatar & Info Row Overlay */}
-        <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full">
-          {/* Avatar Container Box */}
-          <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
-            <img
-              src={owner?.logo_url || "https://placeholder.co/150"}
-              alt="Shop Logo"
-              className="w-full h-full object-cover rounded-xl"
-              onError={(e) => {
-                e.target.src = "https://via.placeholder.com/150";
-              }}
-            />
-          </div>
+        {/* 🎯 FIXED: Clean HTML structural elements nesting layout layout */}
+        <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full justify-between">
+          <div className="flex items-end flex-1 min-w-0">
+            {/* Profile Avatar Container Box */}
+            <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
+              <img
+                src={getFullImageUrl(owner?.logo_url)}
+                alt="Shop Logo"
+                className="w-full h-full object-cover rounded-xl"
+                onError={(e) => {
+                  e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
+                }}
+              />
+            </div>
 
-          {/* Shop Meta Details Block */}
-          <div className="ml-3 mb-1 flex-1">
-            <h1 className="text-xl font-bold text-white leading-tight drop-shadow-md">
-              {owner?.shop_name || "Loading Shop..."}
-            </h1>
-            <p className="text-xs text-gray-500 line-clamp-1 mt-3 font-medium">
-              {owner?.shop_description || "Welcome to our digital storefront!"}
-            </p>
+            {/* Shop Meta Details Block */}
+            <div className="ml-3 mb-1 flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-white leading-tight drop-shadow-md line-clamp-1">
+                {owner?.shop_name || "Loading Shop..."}
+              </h1>
+              <p className="text-xs text-gray-500 line-clamp-1 mt-3 font-medium">
+                {owner?.shop_description || "Welcome to our digital storefront!"}
+              </p>
+            </div>
           </div>
 
           {/* Customer Dynamic Badge Pill */}
           <span
             style={{ backgroundColor: lightBgColor, color: primaryColor }}
-            className="text-xs px-3 py-1.5 rounded-full font-bold flex-shrink-0 self-center mt-6 transition-all"
+            className="text-xs px-3 py-1.5 rounded-full font-bold flex-shrink-0 self-center mt-6 transition-all ml-2"
           >
             Hi, {user?.name?.split(" ")[0] || "Guest"}
           </span>
@@ -241,7 +260,7 @@ const ShopMainView = () => {
                         {category.name}
                       </h3>
 
-                      {/* LAYOUT UPGRADE: Passing the Owner dashboard configuration down to ProductList */}
+                      {/* LAYOUT UPGRADE: Passing configuration down to ProductList */}
                       <ProductList
                         products={category.products}
                         onAdd={addToCart}
@@ -255,7 +274,7 @@ const ShopMainView = () => {
             )}
           </div>
 
-          {/* 🎨 DYNAMIC BUTTON: Theme color dynamically bound to checkout launcher banner */}
+          {/* 🎨 DYNAMIC BUTTON: Checkout launcher banner */}
           {cart.length > 0 && (
             <div className="fixed bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.08)] z-20">
               <button
