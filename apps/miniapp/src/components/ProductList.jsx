@@ -38,13 +38,14 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
                     <div className={`flex ${layoutType === 'grid' ? 'flex-col' : 'items-center space-x-3'} flex-1`}>
                         {/* Product Image Box */}
                         <div className={`${layoutType === 'grid' ? 'w-full h-32 mb-3' : 'w-16 h-16'} bg-gray-100 rounded-xl overflow-hidden flex-shrink-0`}>
-                            <img 
-                                src={getFullImageUrl(product.image_url)} // 🎯 UPDATED: Wrapped with absolute formatter pipeline
+                           <img 
+                                src={getFullImageUrl(product.image_url || product.image || product.photo)} 
                                 alt={product.name} 
                                 className="w-full h-full object-cover"
+                                /* 🎯 ADD THIS ATTRIBUTE LINE TO ALL APPLICABLE SHOP HEADER & PRODUCT IMG TAGS: */
+                                crossOrigin="anonymous" 
                                 onError={(e) => { 
-                                    // Safe production network hiccup fallback image
-                                    e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600'; 
+                                    e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300'; 
                                 }}
                             />
                         </div>
