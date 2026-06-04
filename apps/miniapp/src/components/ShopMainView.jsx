@@ -208,8 +208,7 @@ const ShopMainView = () => {
                 Store is Closed
               </h4>
               <p className="text-[11px] text-amber-600 mt-0.5">
-                The merchant is currently not accepting automated checkout
-                orders.
+                The merchant is currently not accepting automated checkout orders.
               </p>
             </div>
           )}
@@ -242,7 +241,7 @@ const ShopMainView = () => {
                         {category.name}
                       </h3>
 
-                      {/* LAYOUT UPGRADE: Dynamic grid vs list injection */}
+                      {/* LAYOUT UPGRADE: Passing the Owner dashboard configuration down to ProductList */}
                       <ProductList
                         products={category.products}
                         onAdd={addToCart}
@@ -256,7 +255,7 @@ const ShopMainView = () => {
             )}
           </div>
 
-          {/* 🎨 DYNAMIC BUTTON: Checkout launcher banner */}
+          {/* 🎨 DYNAMIC BUTTON: Theme color dynamically bound to checkout launcher banner */}
           {cart.length > 0 && (
             <div className="fixed bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.08)] z-20">
               <button
