@@ -1,6 +1,24 @@
 import React from 'react';
+import api from '../api/axios'; // 🎯 CRITICAL: Importing your custom axios setup to grab the backend server domain
 
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
+    
+    // 🌐 BASE PATH FORMATTER: Dynamically prefixes your Laravel domain name to relative storage paths
+    const getFullImageUrl = (imagePath) => {
+        if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; // High-quality fallback coffee/cafe image
+        
+        // If the owner input an absolute path link or external URL, pass it right through
+        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+            return imagePath;
+        }
+        
+        // Auto-extracts your true backend root path (e.g., https://api.phumyerng.xyz) by cutting out the /api suffix
+        const backendRoot = api.defaults.baseURL?.replace("/api", "") || "http://localhost:8000";
+        
+        // Return clean merged production path
+        return `${backendRoot}/${imagePath.replace(/^\//, "")}`;
+    };
+
     return (
         <div className={
             layoutType === 'grid' 
@@ -19,10 +37,13 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
                         {/* Product Image Box */}
                         <div className={`${layoutType === 'grid' ? 'w-full h-32 mb-3' : 'w-16 h-16'} bg-gray-100 rounded-xl overflow-hidden flex-shrink-0`}>
                             <img 
-                                src={product.image_url || 'https://placeholder.co/150'} 
+                                src={getFullImageUrl(product.image_url)} // 🎯 UPDATED: Wrapped with absolute formatter pipeline
                                 alt={product.name} 
                                 className="w-full h-full object-cover"
-                                onError={(e) => { e.target.src = 'https://via.placeholder.com/150'; }}
+                                onError={(e) => { 
+                                    // Safe production network hiccup fallback image
+                                    e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600'; 
+                                }}
                             />
                         </div>
 
