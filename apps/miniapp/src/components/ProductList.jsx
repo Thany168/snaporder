@@ -1,12 +1,13 @@
 import React from 'react';
+// 🎯 CRITICAL FIX: Ensure ProductCard is imported correctly with exact filename casing!
+import ProductCard from './ProductCard'; 
 
-// Inside your ProductList.jsx
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     return (
         <div className={
             layoutType === 'grid' 
-                ? "grid grid-cols-2 gap-3.5 px-2"  // 🛍️ Modern 2-Column Grid View
-                : "space-y-3.5 px-2"              // 🍔 Widescreen Delivery Row List View
+                ? "grid grid-cols-2 gap-3.5 px-2"  
+                : "space-y-3.5 px-2"              
         }>
             {products.map(product => (
                 <ProductCard 
@@ -21,5 +22,4 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     );
 };
 
-// This is the most important line! 
 export default ProductList;
