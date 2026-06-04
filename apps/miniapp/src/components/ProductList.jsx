@@ -4,19 +4,21 @@ import api from '../api/axios'; // 🎯 CRITICAL: Importing your custom axios se
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     
     // 🌐 BASE PATH FORMATTER: Dynamically prefixes your Laravel domain name to relative storage paths
-    const getFullImageUrl = (imagePath) => {
-        if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; // High-quality fallback coffee/cafe image
+   const getFullImageUrl = (imagePath) => {
+        if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300";
         
-        // If the owner input an absolute path link or external URL, pass it right through
-        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-            return imagePath;
+        // 🎯 FIX: Force secure HTTPS wrapper protocol for your ngrok tunnel paths
+        let securePath = imagePath;
+        if (securePath.startsWith("http://")) {
+            securePath = securePath.replace("http://", "https://");
         }
         
-        // Auto-extracts your true backend root path (e.g., https://api.phumyerng.xyz) by cutting out the /api suffix
-        const backendRoot = api.defaults.baseURL?.replace("/api", "") || "http://localhost:8000";
+        if (securePath.startsWith("https://")) {
+            return securePath;
+        }
         
-        // Return clean merged production path
-        return `${backendRoot}/${imagePath.replace(/^\//, "")}`;
+        const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
+        return `${backendRoot.replace("http://", "https://")}/${securePath.replace(/^\//, "")}`;
     };
 
     return (

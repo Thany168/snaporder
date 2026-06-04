@@ -27,19 +27,18 @@ const ShopMainView = () => {
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
     
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-      return imagePath;
+    // 🎯 FIX: Force secure HTTPS wrapper protocol for your shop logo/cover ngrok paths
+    let securePath = imagePath;
+    if (securePath.startsWith("http://")) {
+        securePath = securePath.replace("http://", "https://");
+    }
+    
+    if (securePath.startsWith("https://")) {
+        return securePath;
     }
     
     const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
-    
-    // 🎯 FIX: If the path is a logo path that doesn't include 'storage/', force it into the public storage path link
-    let cleanPath = imagePath.replace(/^\//, "");
-    if (!cleanPath.startsWith("storage/") && !cleanPath.startsWith("public/")) {
-      cleanPath = `storage/${cleanPath}`;
-    }
-    
-    return `${backendRoot}/${cleanPath}`;
+    return `${backendRoot.replace("http://", "https://")}/${securePath.replace(/^\//, "")}`;
   };
 
   // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
