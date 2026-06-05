@@ -1,5 +1,6 @@
 import React from 'react';
 import api from '../api/axios'; 
+import SecureImage from './SecureImage';
 
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     
@@ -39,24 +40,12 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
                     <div className={`flex ${layoutType === 'grid' ? 'flex-col' : 'items-center space-x-3'} flex-1`}>
                         {/* Product Image Box */}
                         <div className={`${layoutType === 'grid' ? 'w-full h-32 mb-3' : 'w-16 h-16'} bg-gray-100 rounded-xl overflow-hidden flex-shrink-0`}>
-                            <img 
-                                src={getFullImageUrl(product.image_url || product.image || product.photo)} 
+                            {/* 🎯 THE FIX: Swap the native img tag out for your SecureImage component */}
+                            <SecureImage 
+                                imagePath={product.image_url || product.image || product.photo} 
                                 alt={product.name} 
                                 className="w-full h-full object-cover"
-                                // 🎯 TRY STANDARD LOADING FIRST
-                                onError={(e) => { 
-                                    // 🚀 CORS BYPASS SURGERY: If it fails due to a CORS policy block, 
-                                    // remove the crossOrigin constraint and let it pull natively via standard browser cache.
-                                    if (e.target.getAttribute('crossOrigin')) {
-                                        e.target.removeAttribute('crossOrigin');
-                                        // Force reload the same URL without crossOrigin restrictions
-                                        const currentSrc = e.target.src;
-                                        e.target.src = currentSrc + "?cors-bypass=" + Date.now();
-                                    } else {
-                                        // Real fallback if the file actually does not exist (404)
-                                        e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300';
-                                    }
-                                }}
+                                fallback="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300"
                             />
                         </div>
 

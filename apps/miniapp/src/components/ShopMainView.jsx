@@ -5,6 +5,7 @@ import { useCart } from "../hooks/useCart";
 // Components
 import ProductList from "./ProductList";
 import Checkout from "../pages/Checkout";
+import SecureImage from './SecureImage';
 
 const ShopMainView = () => {
   const { cart, addToCart, totalAmount, clearCart } = useCart();
@@ -16,9 +17,6 @@ const ShopMainView = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentShopId, setCurrentShopId] = useState(null);
-
-  // 🎯 POPUP STATE CONTROL: Checks if the device has already run the handshake this session
-  const [showNgrokModal, setShowNgrokModal] = useState(false);
 
   // 🎨 DYNAMIC BRAND COLORS
   const primaryColor = owner?.brand_color || "#2563eb"; 
@@ -55,15 +53,6 @@ const ShopMainView = () => {
     const urlParam = urlParams.get("startapp") || urlParams.get("tgWebAppStartParam");
     return tgParam || urlParam || null;
   }, [tg]);
-
-  // 🚀 AUTOMATIC MODAL TRIGGER CHECK
-  useEffect(() => {
-    // Check if the user has already clicked "Visit Site" in this browser/device session
-    const isNgrokVerified = sessionStorage.getItem("phumyerng_ngrok_verified");
-    if (!isNgrokVerified) {
-      setShowNgrokModal(true);
-    }
-  }, []);
 
   useEffect(() => {
     const checkLinkSwitch = () => {
@@ -138,64 +127,29 @@ const ShopMainView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 relative">
-      
-      {/* 🎯 FLOATING AUTOMATIC POPUP MODAL */}
-      {showNgrokModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-xl border border-gray-100 relative">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
-              ☕
-            </div>
-            <h3 className="text-lg font-black text-gray-900 leading-snug">
-              Initialize Store Assets
-            </h3>
-            <p className="text-xs text-gray-500 mt-2 px-2 leading-relaxed">
-              To load live coffee menus and digital product images on this device, please authorize the secure local tunnel stream.
-            </p>
-            
-            <button
-              onClick={() => {
-                const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
-                
-                // 1️⃣ Record verification status so it never displays again this session
-                sessionStorage.setItem("phumyerng_ngrok_verified", "true");
-                setShowNgrokModal(false);
-
-                // 2️⃣ Force open link context for the user handshake setup
-                if (window.Telegram?.WebApp) {
-                  window.Telegram.WebApp.openLink(backendRoot);
-                } else {
-                  window.open(backendRoot, '_blank');
-                }
-              }}
-              style={{ backgroundColor: primaryColor }}
-              className="w-full text-white text-sm font-bold py-3 px-4 rounded-xl mt-5 shadow-md active:scale-[0.98] transition-all block"
-            >
-              🚀 Click to Connect & Tap "Visit Site"
-            </button>
-          </div>
-        </div>
-      )}
-
       <header className="relative bg-white shadow-sm border-b border-gray-100">
+        {/* Store Cover Image Banner */}
         <div className="w-full h-32 bg-gray-200 overflow-hidden relative">
-          <img
-            src={getFullImageUrl(owner?.cover_url)}
+          {/* 🎯 FIXED: Replaced raw img tag with SecureImage component */}
+          <SecureImage
+            imagePath={owner?.cover_url}
             alt="Shop Cover"
             className="w-full h-full object-cover"
-            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
+            fallback="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
 
         <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full justify-between">
           <div className="flex items-end flex-1 min-w-0">
+            {/* Profile Avatar Container Box */}
             <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
-              <img
-                src={getFullImageUrl(owner?.logo_url)}
+              {/* 🎯 FIXED: Replaced raw img tag with SecureImage component */}
+              <SecureImage
+                imagePath={owner?.logo_url}
                 alt="Shop Logo"
                 className="w-full h-full object-cover rounded-xl"
-                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
+                fallback="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"
               />
             </div>
 
