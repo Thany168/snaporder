@@ -3,12 +3,14 @@ import api from '../api/axios'; // 🎯 CRITICAL: Importing your custom axios se
 
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     
-    // 🌐 BASE PATH FORMATTER: Dynamically prefixes your Laravel domain name to relative storage paths
-   const getFullImageUrl = (imagePath) => {
+    // 🌐 BASE PATH FORMATTER: Dynamically prefixes your Laravel domain and storage directory mappings
+    const getFullImageUrl = (imagePath) => {
+        // High-quality backup fallback if the entry is null or empty
         if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300";
         
-        // 🎯 FIX: Force secure HTTPS wrapper protocol for your ngrok tunnel paths
         let securePath = imagePath;
+        
+        // Force secure HTTPS protocol for complete web URLs
         if (securePath.startsWith("http://")) {
             securePath = securePath.replace("http://", "https://");
         }
@@ -17,8 +19,15 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
             return securePath;
         }
         
+        // 🎯 THE CRITICAL DYNAMIC FIX: If Filament saves a raw path like "products/pic.jpg", 
+        // prepend the required public storage symlink prefix folder automatically
+        let cleanPath = securePath.replace(/^\//, "");
+        if (!cleanPath.startsWith("storage/") && !cleanPath.startsWith("public/") && !cleanPath.startsWith("logos/")) {
+            cleanPath = `storage/${cleanPath}`;
+        }
+        
         const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
-        return `${backendRoot.replace("http://", "https://")}/${securePath.replace(/^\//, "")}`;
+        return `${backendRoot.replace("http://", "https://")}/${cleanPath}`;
     };
 
     return (
