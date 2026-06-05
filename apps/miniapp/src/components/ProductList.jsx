@@ -1,40 +1,32 @@
 import React from 'react';
-import api from '../api/axios'; // 🎯 CRITICAL: Importing your custom axios setup to grab the backend server domain
+import api from '../api/axios'; 
 
 const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
     
-    // 🌐 BASE PATH FORMATTER: Dynamically prefixes your Laravel domain and storage directory mappings
+    // 🌐 ABSOLUTE API STREAMING FORMATTER
     const getFullImageUrl = (imagePath) => {
-        // High-quality backup fallback if the entry is null or empty
         if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300";
         
-        let securePath = imagePath;
-        
-        // Force secure HTTPS protocol for complete web URLs
-        if (securePath.startsWith("http://")) {
-            securePath = securePath.replace("http://", "https://");
+        // If it's already an absolute web URL, pass it right through
+        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+            return imagePath;
         }
         
-        if (securePath.startsWith("https://")) {
-            return securePath;
-        }
+        let cleanPath = imagePath.replace(/^\//, "");
         
-        // 🎯 THE CRITICAL DYNAMIC FIX: If Filament saves a raw path like "products/pic.jpg", 
-        // prepend the required public storage symlink prefix folder automatically
-        let cleanPath = securePath.replace(/^\//, "");
-        if (!cleanPath.startsWith("storage/") && !cleanPath.startsWith("public/") && !cleanPath.startsWith("logos/")) {
-            cleanPath = `storage/${cleanPath}`;
-        }
-        
-        const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
-        return `${backendRoot.replace("http://", "https://")}/${cleanPath}`;
+        // Get your active API base URL domain mapping
+        const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
+        const cleanBaseURL = backendRoot.endsWith('/api') ? backendRoot : `${backendRoot}/api`;
+
+        // 🎯 Route everything cleanly into your custom MediaController endpoint wrapper
+        return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}`;
     };
 
     return (
         <div className={
             layoutType === 'grid' 
-                ? "grid grid-cols-2 gap-4 px-3"  // 🛍️ Clean 2-Column Grid View
-                : "space-y-3 px-3"              // 🍔 Standard List View Rows
+                ? "grid grid-cols-2 gap-4 px-3"  
+                : "space-y-3 px-3"              
         }>
             {products.map(product => (
                 <div 
@@ -47,14 +39,23 @@ const ProductList = ({ products, onAdd, layoutType, primaryColor }) => {
                     <div className={`flex ${layoutType === 'grid' ? 'flex-col' : 'items-center space-x-3'} flex-1`}>
                         {/* Product Image Box */}
                         <div className={`${layoutType === 'grid' ? 'w-full h-32 mb-3' : 'w-16 h-16'} bg-gray-100 rounded-xl overflow-hidden flex-shrink-0`}>
-                           <img 
+                            <img 
                                 src={getFullImageUrl(product.image_url || product.image || product.photo)} 
                                 alt={product.name} 
                                 className="w-full h-full object-cover"
-                                /* 🎯 ADD THIS ATTRIBUTE LINE TO ALL APPLICABLE SHOP HEADER & PRODUCT IMG TAGS: */
-                                crossOrigin="anonymous" 
+                                // 🎯 TRY STANDARD LOADING FIRST
                                 onError={(e) => { 
-                                    e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300'; 
+                                    // 🚀 CORS BYPASS SURGERY: If it fails due to a CORS policy block, 
+                                    // remove the crossOrigin constraint and let it pull natively via standard browser cache.
+                                    if (e.target.getAttribute('crossOrigin')) {
+                                        e.target.removeAttribute('crossOrigin');
+                                        // Force reload the same URL without crossOrigin restrictions
+                                        const currentSrc = e.target.src;
+                                        e.target.src = currentSrc + "?cors-bypass=" + Date.now();
+                                    } else {
+                                        // Real fallback if the file actually does not exist (404)
+                                        e.target.src = 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300';
+                                    }
                                 }}
                             />
                         </div>

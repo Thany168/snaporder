@@ -23,22 +23,34 @@ const ShopMainView = () => {
     ? `${owner.brand_color}15`
     : "#dbeafe"; // Tinted background for badges
 
-  // 🌐 BASE PATH FORMATTER: Turns database path fragments into real absolute URLs
+  // 🌐 ABSOLUTE API STREAMING FORMATTER: Channels assets through PHP controller to bypass Ngrok interstitial screens
   const getFullImageUrl = (imagePath) => {
     if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
     
-    // 🎯 FIX: Force secure HTTPS wrapper protocol for your shop logo/cover ngrok paths
-    let securePath = imagePath;
-    if (securePath.startsWith("http://")) {
-        securePath = securePath.replace("http://", "https://");
+    // If it's already an absolute external web URL link string
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+        // 🎯 INTERCEPT AND CONVERT: If it points to raw storage/logos directories, rewrite it for the controller proxy
+        if (imagePath.includes("/storage/")) {
+            const parts = imagePath.split("/storage/");
+            imagePath = `products/${parts[1]}`;
+        } else if (imagePath.includes("/logos/")) {
+            const parts = imagePath.split("/logos/");
+            imagePath = `logos/${parts[1]}`;
+        } else {
+            return imagePath;
+        }
     }
     
-    if (securePath.startsWith("https://")) {
-        return securePath;
-    }
+    // Strip out any duplicate folder prefixes to maintain a clean query key string
+    let cleanPath = imagePath.replace(/^\//, "");
+    cleanPath = cleanPath.replace("storage/", "").replace("public/", "");
     
-    const backendRoot = api.defaults.baseURL?.replace("/api", "") || "https://stinging-unknowing-dry.ngrok-free.dev";
-    return `${backendRoot.replace("http://", "https://")}/${securePath.replace(/^\//, "")}`;
+    // Safely pull the active base server path from your configured Axios client layer
+    const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
+    const cleanBaseURL = backendRoot.endsWith('/api') ? backendRoot : `${backendRoot}/api`;
+
+    // 🚀 REDIRECT PIPELINE: Direct request through our custom media API endpoint
+    return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}`;
   };
 
   // 🚀 STEP 1: PURE STATE EXTRACTOR FUNCTION
@@ -164,7 +176,6 @@ const ShopMainView = () => {
         </div>
 
         {/* Profile Avatar & Info Row Overlay */}
-        {/* 🎯 FIXED: Clean HTML structural elements nesting layout layout */}
         <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full justify-between">
           <div className="flex items-end flex-1 min-w-0">
             {/* Profile Avatar Container Box */}
@@ -221,7 +232,7 @@ const ShopMainView = () => {
             />
           </div>
 
-          {/* 💤 AUTOMATION UPGRADE: Store Open/Closed Notice Banner */}
+          {/* Store Open/Closed Notice Banner */}
           {owner?.is_open === false && (
             <div className="mx-4 mt-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center shadow-sm">
               <span className="text-xl">💤</span>
@@ -254,7 +265,6 @@ const ShopMainView = () => {
                 <div key={category.id} className="mb-6">
                   {category.products && category.products.length > 0 && (
                     <>
-                      {/* Category Heading themed dynamically */}
                       <h3
                         style={{ color: primaryColor }}
                         className="text-xs font-black px-2 mb-2.5 uppercase tracking-wider"
@@ -262,7 +272,6 @@ const ShopMainView = () => {
                         {category.name}
                       </h3>
 
-                      {/* LAYOUT UPGRADE: Passing configuration down to ProductList */}
                       <ProductList
                         products={category.products}
                         onAdd={addToCart}
@@ -276,7 +285,7 @@ const ShopMainView = () => {
             )}
           </div>
 
-          {/* 🎨 DYNAMIC BUTTON: Checkout launcher banner */}
+          {/* Checkout launcher banner */}
           {cart.length > 0 && (
             <div className="fixed bottom-0 w-full p-4 bg-white border-t border-gray-100 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.08)] z-20">
               <button
