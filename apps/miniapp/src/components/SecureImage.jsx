@@ -11,9 +11,9 @@ const SecureImage = ({ imagePath, alt, className, fallback }) => {
             return;
         }
 
-        // 1️⃣ Direct Passthrough for absolute external mockup placeholder URLs
+        // Direct bypass for standard external web placeholders
         if ((imagePath.startsWith("http://") || imagePath.startsWith("https://")) && 
-            !imagePath.includes("/storage/") && !imagePath.includes("/logos/")) {
+            !imagePath.includes("/storage/") && !imagePath.includes("/logos/") && !imagePath.includes("/covers/")) {
             setImageSrc(imagePath);
             return;
         }
@@ -22,23 +22,22 @@ const SecureImage = ({ imagePath, alt, className, fallback }) => {
             try {
                 let cleanPath = imagePath;
 
-                // 2️⃣ 🎯 BULLETPROOF SPLITTER: Extract everything after /storage/ or /public/ dynamically
+                // Safely extract the relative directory target chunks
                 if (cleanPath.includes("/storage/")) {
                     cleanPath = cleanPath.split("/storage/")[1];
                 } else if (cleanPath.includes("/public/")) {
                     cleanPath = cleanPath.split("/public/")[1];
                 }
 
-                // 3️⃣ Strip out any remaining leading slashes or wrapper fragments
-                cleanPath = cleanPath.replace(/^\//, "");
-                
-                // If it still has a full URL structure because of an edge case, get the path fragment
-                if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
-                    const urlObj = new URL(cleanPath);
-                    cleanPath = urlObj.pathname.replace(/^\//, "").replace("storage/", "").replace("public/", "");
+                cleanPath = cleanPath.replace(/^\//, "").replace("storage/", "").replace("public/", "");
+
+                // Handle string isolation if a full production url bypasses splitting
+                if (cleanPath.startsWith("http")) {
+                    const parts = cleanPath.split('/');
+                    cleanPath = "products/" + parts[parts.length - 1];
                 }
 
-                // 🚀 Call your backend MediaController API to request the unblockable Base64 string context
+                // Hit our custom backend route map
                 const response = await api.get(`/media?path=${encodeURIComponent(cleanPath)}`);
                 
                 if (response.data && response.data.data) {

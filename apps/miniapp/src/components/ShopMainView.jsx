@@ -5,7 +5,6 @@ import { useCart } from "../hooks/useCart";
 // Components
 import ProductList from "./ProductList";
 import Checkout from "../pages/Checkout";
-import SecureImage from './SecureImage';
 
 const ShopMainView = () => {
   const { cart, addToCart, totalAmount, clearCart } = useCart();
@@ -19,32 +18,34 @@ const ShopMainView = () => {
   const [currentShopId, setCurrentShopId] = useState(null);
 
   // 🎨 DYNAMIC BRAND COLORS
-  const primaryColor = owner?.brand_color || "#2563eb"; 
-  const lightBgColor = owner?.brand_color ? `${owner.brand_color}15` : "#dbeafe"; 
+  const primaryColor = owner?.brand_color || "#2563eb";
+  const lightBgColor = owner?.brand_color ? `${owner.brand_color}15` : "#dbeafe";
 
   // 🌐 ABSOLUTE API STREAMING FORMATTER
   const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
-    
+    if (!imagePath)
+      return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
+
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-        if (imagePath.includes("/storage/")) {
-            const parts = imagePath.split("/storage/");
-            imagePath = `products/${parts[1]}`;
-        } else if (imagePath.includes("/logos/")) {
-            const parts = imagePath.split("/logos/");
-            imagePath = `logos/${parts[1]}`;
-        } else {
-            return imagePath;
-        }
+      if (imagePath.includes("/storage/")) {
+        const parts = imagePath.split("/storage/");
+        imagePath = `products/${parts[1]}`;
+      } else if (imagePath.includes("/logos/")) {
+        const parts = imagePath.split("/logos/");
+        imagePath = `logos/${parts[1]}`;
+      } else {
+        return imagePath;
+      }
     }
-    
+
     let cleanPath = imagePath.replace(/^\//, "");
     cleanPath = cleanPath.replace("storage/", "").replace("public/", "");
-    
-    const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
-    const cleanBaseURL = backendRoot.endsWith('/api') ? backendRoot : `${backendRoot}/api`;
 
-    return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}`;
+    const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
+    const cleanBaseURL = backendRoot.endsWith("/api") ? backendRoot : `${backendRoot}/api`;
+
+    // 🎯 THE PRODUCTION FIX: Append ngrok-skip-browser-warning directly to the URL string natively
+    return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}&ngrok-skip-browser-warning=true`;
   };
 
   const getLiveParamId = useCallback(() => {
@@ -130,26 +131,25 @@ const ShopMainView = () => {
       <header className="relative bg-white shadow-sm border-b border-gray-100">
         {/* Store Cover Image Banner */}
         <div className="w-full h-32 bg-gray-200 overflow-hidden relative">
-          {/* 🎯 FIXED: Replaced raw img tag with SecureImage component */}
-          <SecureImage
-            imagePath={owner?.cover_url}
+          {/* 🎯 BACK TO RAW IMG: Completely safe with query bypass injection */}
+          <img
+            src={getFullImageUrl(owner?.cover_url)}
             alt="Shop Cover"
             className="w-full h-full object-cover"
-            fallback="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"
+            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
-
         <div className="p-4 flex items-end -mt-12 relative z-10 px-4 w-full justify-between">
           <div className="flex items-end flex-1 min-w-0">
             {/* Profile Avatar Container Box */}
             <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-md border border-gray-100 overflow-hidden flex-shrink-0">
-              {/* 🎯 FIXED: Replaced raw img tag with SecureImage component */}
-              <SecureImage
-                imagePath={owner?.logo_url}
+              {/* 🎯 BACK TO RAW IMG */}
+              <img
+                src={getFullImageUrl(owner?.logo_url)}
                 alt="Shop Logo"
                 className="w-full h-full object-cover rounded-xl"
-                fallback="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"
+                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
               />
             </div>
 
