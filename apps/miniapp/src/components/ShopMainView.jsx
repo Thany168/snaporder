@@ -21,18 +21,17 @@ const ShopMainView = () => {
   const primaryColor = owner?.brand_color || "#2563eb";
   const lightBgColor = owner?.brand_color ? `${owner.brand_color}15` : "#dbeafe";
 
-  // 🌐 ABSOLUTE API STREAMING FORMATTER
+ // 🌐 ABSOLUTE API STREAMING FORMATTER
   const getFullImageUrl = (imagePath) => {
     if (!imagePath)
       return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
 
+    // 🎯 DYNAMIC STRIPPER: Handle storage directory structures cleanly without forcing "products/"
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
       if (imagePath.includes("/storage/")) {
-        const parts = imagePath.split("/storage/");
-        imagePath = `products/${parts[1]}`;
+        imagePath = imagePath.split("/storage/")[1];
       } else if (imagePath.includes("/logos/")) {
-        const parts = imagePath.split("/logos/");
-        imagePath = `logos/${parts[1]}`;
+        imagePath = "logos/" + imagePath.split("/logos/")[1];
       } else {
         return imagePath;
       }
@@ -44,7 +43,7 @@ const ShopMainView = () => {
     const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
     const cleanBaseURL = backendRoot.endsWith("/api") ? backendRoot : `${backendRoot}/api`;
 
-    // 🎯 THE PRODUCTION FIX: Append ngrok-skip-browser-warning directly to the URL string natively
+    // Append flag securely
     return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}&ngrok-skip-browser-warning=true`;
   };
 
