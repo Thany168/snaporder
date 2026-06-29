@@ -25,8 +25,14 @@ export const createProduct = async (formData) => {
   return res.data;
 };
 
-// 4. PUT /api/owner/products/{id} — Update item records using standard Laravel method parameters spoofing
+// 4. POST /api/owner/products/{id} (Spoofed as PUT) — Update item records cleanly
 export const updateProduct = async (id, formData) => {
+  // 🎯 THE WORKAROUND: Force multipart parsing on PHP backend environments
+ if (formData instanceof FormData && !formData.has('_method')) {
+    formData.append('_method', 'PUT'); // ⚡ This alters the payload to look like a PUT request under the hood!
+  }
+
+  // 🚀 UNIFIED ACTION: Fires form updates over a unified central pipeline handler
   const res = await client.post(`/owner/products/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -47,7 +53,6 @@ export const deleteProduct = async (id) => {
 
 // 6. GET /api/shop/{ownerId}/products — Public menu loading (Categories + Nested Products)
 export const getShopProducts = async (ownerId) => {
-  // 🚀 FIXED: We accept ownerId dynamically from the component parameter string setup!
   const res = await client.get(`/shop/${ownerId}/products`);
   return res.data;
 };

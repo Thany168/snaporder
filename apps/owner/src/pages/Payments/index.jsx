@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Badge from "../../components/ui/Badge";
 import Modal from "../../components/ui/Modal";
 import Button from "../../components/ui/Button";
+import client from "../../api/client"; // 🚀 Cleanly using your central API axios instance
 
 const FILTERS = ["all", "pending", "verified", "rejected"];
 
@@ -11,32 +12,15 @@ export default function Payments() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🚀 Environment configuration: points straight to your backend API gateway
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
-
-  // 🚀 Step 1: Fetch live checkout entries dynamically on component mount
+  // 1️⃣ Fetch active transactions using your central authenticated axios instance pipeline
   useEffect(() => {
     const fetchLivePayments = async () => {
       try {
         setLoading(true);
+        // Automatically leverages your interceptors, tokens, and custom base URL contexts seamlessly!
+        const response = await client.get("/owner/payments");
+        const data = response.data;
         
-        const response = await fetch(`${BASE_URL}/owner/payments`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            // Attaches active admin/owner credentials securely from local storage
-            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP Error Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Adapt cleanly to direct arrays or wrapped collection structures
         if (Array.isArray(data)) {
           setPayments(data);
         } else if (data?.data && Array.isArray(data.data)) {
@@ -50,16 +34,16 @@ export default function Payments() {
     };
 
     fetchLivePayments();
-  }, [BASE_URL]);
+  }, []);
 
-  // 🚀 Step 2: Handle data filtering dynamically matching database attributes
+  // 2️⃣ Handle data filtering dynamically matching database attributes
   const filtered = payments.filter((p) => {
     if (filter === "all") return true;
     const orderStatus = p.status || p.order?.status || "pending";
     return orderStatus.toLowerCase() === filter.toLowerCase();
   });
 
-  // 🚀 Step 3: Compute live counters from the real dataset array rows
+  // 3️⃣ Compute analytical counters from the real dataset array rows
   const counts = {
     pending: payments.filter((p) => {
       const s = p.status || p.order?.status || "pending";
@@ -75,6 +59,22 @@ export default function Payments() {
     }).length,
   };
 
+  // 🎯 HELP WRAPPER: Safely maps local storage assets vs absolute cloud URLs defensively
+  const getReceiptImageSrc = (item) => {
+    if (!item) return "";
+    const path = item.screenshot || item.screenshot_url || item.screenshot_path;
+    if (!path) return "";
+
+    // If it's a full Cloudinary or external link, let it stream out raw!
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+
+    // Fallback context for older legacy local storage items
+    const base = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
+    return `${base.replace("/api", "")}/storage/${path}`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-gray-400 font-medium animate-pulse">
@@ -85,7 +85,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-4">
-      {/* Dynamic Summary Analytics Cards */}
+      {/* Summary Analytics Area */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Pending", count: counts.pending, color: "text-yellow-600", bg: "bg-yellow-50" },
@@ -103,7 +103,7 @@ export default function Payments() {
         ))}
       </div>
 
-      {/* Filter Tabs Controller */}
+      {/* Filter Controllers */}
       <div className="flex gap-2">
         {FILTERS.map((f) => (
           <button
@@ -118,7 +118,7 @@ export default function Payments() {
         ))}
       </div>
 
-      {/* Data Table Grid View */}
+      {/* Data Table View */}
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
         <table className="w-full">
           <thead>
@@ -144,6 +144,7 @@ export default function Payments() {
                 const totalBill = parseFloat(p.amount || p.total_amount || p.order?.total_amount || 0);
                 const currentStatus = p.status || p.order?.status || "pending";
                 const displayDate = p.created_at ? new Date(p.created_at).toLocaleString() : p.date || "N/A";
+                const hasScreenshot = p.screenshot || p.screenshot_path || p.screenshot_url;
 
                 return (
                   <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
@@ -157,7 +158,7 @@ export default function Payments() {
                         onClick={() => setSelected(p)}
                         className="text-xs font-semibold text-blue-600 hover:underline"
                       >
-                        {p.screenshot || p.screenshot_path || p.screenshot_url ? "View Receipt" : "Quick View"}
+                        {hasScreenshot ? "View Receipt" : "Quick View"}
                       </button>
                     </td>
                   </tr>
@@ -168,7 +169,7 @@ export default function Payments() {
         </table>
       </div>
 
-      {/* Dynamic Overlay Drawer Modal */}
+      {/* Dynamic Overlay Drawer Modal popups */}
       <Modal
         open={!!selected}
         onClose={() => setSelected(null)}
@@ -181,7 +182,7 @@ export default function Payments() {
       >
         {selected?.screenshot || selected?.screenshot_url || selected?.screenshot_path ? (
           <img
-            src={selected.screenshot || selected.screenshot_url || `${BASE_URL.replace('/api', '')}/storage/${selected.screenshot_path}`}
+            src={getReceiptImageSrc(selected)} // 🚀 FIXED: Securely resolves absolute links vs local paths flawlessly!
             alt="Payment Receipt Attachment"
             className="w-full rounded-xl object-contain max-h-[450px]"
           />

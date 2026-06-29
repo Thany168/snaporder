@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import * as XLSX from "xlsx";
+import client from "../../api/client"; // Ensure using your shared custom client instance
 import { createCategory, getCategories } from "../../api/categories";
 import { LuImport, LuPlus } from "react-icons/lu";
 import { BsBackspace } from "react-icons/bs";
@@ -186,7 +187,6 @@ function ImportModal({ onClose, onImported }) {
     setImporting(true);
     setImportError("");
 
-    //  Parse file
     let rawRows;
     try {
       rawRows = await readWorkbook(file);
@@ -202,7 +202,6 @@ function ImportModal({ onClose, onImported }) {
       return;
     }
 
-    // . Validate columns
     const missing = TEMPLATE_COLUMNS.filter((col) => !(col in rawRows[0]));
     if (missing.length > 0) {
       setImportError(
@@ -216,7 +215,6 @@ function ImportModal({ onClose, onImported }) {
     try {
       const products = rawRows.map(parseImportRow);
 
-      // Fetch + auto-create categories
       const existingCats = await getCategories();
       const catMap = {};
       existingCats.forEach((c) => {
@@ -233,7 +231,6 @@ function ImportModal({ onClose, onImported }) {
         }
       }
 
-      //  Send products one-by-one, collect results
       const results = await Promise.allSettled(
         products.map((p) => {
           const fd = new FormData();
@@ -273,12 +270,10 @@ function ImportModal({ onClose, onImported }) {
       setImporting(false);
     }
   };
-  //
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-800">
             Import Products
@@ -292,7 +287,6 @@ function ImportModal({ onClose, onImported }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-5 space-y-4">
           <label
             className="flex flex-col items-center justify-center w-full h-36
@@ -336,7 +330,6 @@ function ImportModal({ onClose, onImported }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 px-5 py-4 border-t bg-gray-50">
           <button
             onClick={onClose}
@@ -432,18 +425,43 @@ export default function Products() {
     setPage(1);
   }, [search]);
 
+  // 🎯 THE BADGE TOGGLE PROTECTION FIX
   const toggleAvailable = useCallback(async (product) => {
+    // 1️⃣ Optimistic local state update for blazing fast UI
     setProducts((ps) =>
       ps.map((p) =>
         p.id === product.id ? { ...p, is_available: !p.is_available } : p,
       ),
     );
+
     try {
       const fd = new FormData();
       fd.append("_method", "PUT");
-      fd.append("is_available", product.is_available ? 0 : 1);
-      await updateProduct(product.id, fd);
-    } catch {
+
+      // Explicit string bits protect Laravel validators from payload mutation drops
+      fd.append("is_available", product.is_available ? "0" : "1");
+
+      // 🚀 CRITICAL: Append existing row elements so the backend doesn't overwrite them to null!
+      fd.append("name", product.name);
+      fd.append("price", product.price);
+      fd.append("stock", product.stock);
+
+      const currentCategory = product.category_id || product.category?.id || "";
+      fd.append("category_id", currentCategory);
+
+      const rawImage =
+        product.image_url || product.image || product.photo || "";
+      if (rawImage) {
+        fd.append("image_url", rawImage);
+      }
+
+      // Route explicitly through client.post spoofing to bypass PUT parser limitations in PHP
+      await client.post(`/owner/products/${product.id}`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    } catch (err) {
+      console.error("Row badge modification execution failed:", err);
+      // Revert if API call completely drops
       setProducts((ps) =>
         ps.map((p) =>
           p.id === product.id
@@ -490,7 +508,6 @@ export default function Products() {
 
   return (
     <div className="space-y-5">
-      {/* Error banner */}
       {error && (
         <div
           className="bg-red-50 border border-red-200 text-red-600 text-sm
@@ -503,7 +520,6 @@ export default function Products() {
         </div>
       )}
 
-      {/* Toolbar */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
@@ -536,7 +552,6 @@ export default function Products() {
         </Button>
       </div>
 
-      {/* Import modal */}
       {openImport && (
         <ImportModal
           onClose={() => setOpenImport(false)}
@@ -544,7 +559,6 @@ export default function Products() {
         />
       )}
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-auto">
           <table className="w-full text-sm">
@@ -566,28 +580,47 @@ export default function Products() {
                   key={product.id}
                   className="border-t hover:bg-gray-50 transition"
                 >
-                  {/* Image */}
+                  {/* Image Grid Fallback Protection Layer */}
                   <td className="px-4 py-3">
-                    {product.image_url ? (
+                    {product.image_url || product.image || product.photo ? (
                       <img
-                        src={product.image_url}
+                        src={(() => {
+                          const path =
+                            product.image_url || product.image || product.photo;
+                          if (
+                            path.startsWith("http://") ||
+                            path.startsWith("https://")
+                          ) {
+                            return path;
+                          }
+                          let cleanPath = path
+                            .replace(/^\//, "")
+                            .replace("storage/", "")
+                            .replace("public/", "");
+                          const backendRoot =
+                            "https://stinging-unknowing-dry.ngrok-free.dev/api";
+                          return `${backendRoot}/media?path=${encodeURIComponent(cleanPath)}&ngrok-skip-browser-warning=true`;
+                        })()}
                         alt={product.name}
                         loading="lazy"
-                        onClick={() => setPreview(product.image_url)}
-                        className="w-10 h-10 rounded-lg object-cover
-                          cursor-pointer hover:scale-110 transition-transform duration-200"
+                        onClick={() => {
+                          const activePath =
+                            product.image_url || product.image || product.photo;
+                          if (activePath) setPreview(activePath);
+                        }}
+                        className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-110 transition-transform duration-200"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=300";
+                        }}
                       />
                     ) : (
-                      <div
-                        className="w-10 h-10 rounded-lg bg-gray-100
-                        flex items-center justify-center text-gray-300 text-xs"
-                      >
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
                         N/A
                       </div>
                     )}
                   </td>
 
-                  {/* Product */}
                   <td className="px-4 py-3 font-medium text-gray-800">
                     {product.name}
                     {product.description && (
@@ -597,17 +630,14 @@ export default function Products() {
                     )}
                   </td>
 
-                  {/* Category */}
                   <td className="px-4 py-3 text-gray-500">
                     {product.category?.name ?? "—"}
                   </td>
 
-                  {/* Price */}
                   <td className="px-4 py-3 text-blue-600 font-semibold">
                     ${parseFloat(product.price).toFixed(2)}
                   </td>
 
-                  {/* Stock */}
                   <td className="px-4 py-3">
                     {product.stock === -1 ? (
                       <span className="text-gray-400">Unlimited</span>
@@ -620,7 +650,6 @@ export default function Products() {
                     )}
                   </td>
 
-                  {/* Status */}
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleAvailable(product)}
@@ -634,7 +663,6 @@ export default function Products() {
                     </button>
                   </td>
 
-                  {/* Actions */}
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button
@@ -666,16 +694,13 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Pagination */}
       <Pagination page={page} total={totalPages} onChange={setPage} />
 
-      {/* Count */}
       <p className="text-xs text-gray-400 text-center">
         {filtered.length} product{filtered.length !== 1 ? "s" : ""}
         {totalPages > 1 && ` · page ${page} of ${totalPages}`}
       </p>
 
-      {/* Image preview modal */}
       <ImagePreviewModal src={preview} onClose={() => setPreview(null)} />
     </div>
   );
