@@ -19,9 +19,11 @@ const ShopMainView = () => {
 
   // 🎨 DYNAMIC BRAND COLORS
   const primaryColor = owner?.brand_color || "#2563eb";
-  const lightBgColor = owner?.brand_color ? `${owner.brand_color}15` : "#dbeafe";
+  const lightBgColor = owner?.brand_color
+    ? `${owner.brand_color}15`
+    : "#dbeafe";
 
- // 🌐 ABSOLUTE API STREAMING FORMATTER
+  // 🌐 ABSOLUTE API STREAMING FORMATTER
   const getFullImageUrl = (imagePath) => {
     if (!imagePath)
       return "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
@@ -40,8 +42,12 @@ const ShopMainView = () => {
     let cleanPath = imagePath.replace(/^\//, "");
     cleanPath = cleanPath.replace("storage/", "").replace("public/", "");
 
-    const backendRoot = api.defaults.baseURL || "https://stinging-unknowing-dry.ngrok-free.dev/api";
-    const cleanBaseURL = backendRoot.endsWith("/api") ? backendRoot : `${backendRoot}/api`;
+    const backendRoot =
+      api.defaults.baseURL ||
+      "https://stinging-unknowing-dry.ngrok-free.dev/api";
+    const cleanBaseURL = backendRoot.endsWith("/api")
+      ? backendRoot
+      : `${backendRoot}/api`;
 
     // Append flag securely
     return `${cleanBaseURL}/media?path=${encodeURIComponent(cleanPath)}&ngrok-skip-browser-warning=true`;
@@ -50,7 +56,8 @@ const ShopMainView = () => {
   const getLiveParamId = useCallback(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tgParam = tg?.initDataUnsafe?.start_param;
-    const urlParam = urlParams.get("startapp") || urlParams.get("tgWebAppStartParam");
+    const urlParam =
+      urlParams.get("startapp") || urlParams.get("tgWebAppStartParam");
     return tgParam || urlParam || null;
   }, [tg]);
 
@@ -61,7 +68,8 @@ const ShopMainView = () => {
         setCurrentShopId(activeLinkId);
         localStorage.setItem("phumyerng_active_shop_id", activeLinkId);
       } else if (!currentShopId) {
-        const fallbackId = localStorage.getItem("phumyerng_active_shop_id") || "1";
+        const fallbackId =
+          localStorage.getItem("phumyerng_active_shop_id") || "1";
         setCurrentShopId(fallbackId);
       }
     };
@@ -102,7 +110,9 @@ const ShopMainView = () => {
         const isTelegram = !!tg?.initData;
         let authResponse;
         if (isTelegram) {
-          authResponse = await api.post("/auth/telegram", { init_data: tg.initData });
+          authResponse = await api.post("/auth/telegram", {
+            init_data: tg.initData,
+          });
         } else {
           authResponse = await api.post("/auth/telegram/dev", {
             telegram_id: "1282406422",
@@ -137,7 +147,10 @@ const ShopMainView = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderTopColor: primaryColor }}></div>
+        <div
+          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2"
+          style={{ borderTopColor: primaryColor }}
+        ></div>
       </div>
     );
   }
@@ -152,7 +165,10 @@ const ShopMainView = () => {
             src={getFullImageUrl(owner?.cover_url)}
             alt="Shop Cover"
             className="w-full h-full object-cover"
-            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
+            onError={(e) => {
+              e.target.src =
+                "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
@@ -165,16 +181,26 @@ const ShopMainView = () => {
                 src={getFullImageUrl(owner?.logo_url)}
                 alt="Shop Logo"
                 className="w-full h-full object-cover rounded-xl"
-                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600"; }}
+                onError={(e) => {
+                  e.target.src =
+                    "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600";
+                }}
               />
             </div>
 
             <div className="ml-3 mb-1 flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-white leading-tight drop-shadow-md line-clamp-1">
+              <h1
+                className="text-xl font-bold leading-tight drop-shadow-md line-clamp-1"
+                style={{
+                  color: primaryColor,
+                  textShadow: "0 1px 2px rgba(0,0,0,0.35)",
+                }}
+              >
                 {owner?.shop_name || "Loading Shop..."}
               </h1>
-              <p className="text-xs text-gray-500 line-clamp-1 mt-3 font-medium">
-                {owner?.shop_description || "Welcome to our digital storefront!"}
+              <p className="text-xs text-black-100 line-clamp-1 mt-3 font-medium">
+                {owner?.shop_description ||
+                  "Welcome to our digital storefront!"}
               </p>
             </div>
           </div>
@@ -200,7 +226,9 @@ const ShopMainView = () => {
               onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
               onChange={async (e) => {
                 const q = e.target.value;
-                const res = await api.get(`/shop/${currentShopId}/products?search=${q}`);
+                const res = await api.get(
+                  `/shop/${currentShopId}/products?search=${q}`,
+                );
                 setCategories(res.data);
               }}
             />
@@ -209,25 +237,42 @@ const ShopMainView = () => {
           {owner?.is_open === false && (
             <div className="mx-4 mt-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center shadow-sm">
               <span className="text-xl">💤</span>
-              <h4 className="text-sm font-bold text-amber-800 mt-1">Store is Closed</h4>
-              <p className="text-[11px] text-amber-600 mt-0.5">The merchant is currently not accepting automated checkout orders.</p>
+              <h4 className="text-sm font-bold text-amber-800 mt-1">
+                Store is Closed
+              </h4>
+              <p className="text-[11px] text-amber-600 mt-0.5">
+                The merchant is currently not accepting automated checkout
+                orders.
+              </p>
             </div>
           )}
 
           <div className="p-2">
             <div className="flex justify-between items-center px-2 mb-3 mt-1">
-              <h2 className="text-base font-bold text-gray-800 uppercase tracking-wide">Store Menu</h2>
-              <span className="text-[10px] bg-gray-200/70 text-gray-500 px-2 py-0.5 rounded-md font-bold">ID: {owner?.id}</span>
+              <h2
+                className="text-base font-bold uppercase tracking-wide"
+                style={{ color: primaryColor }}
+              >
+                Store Menu
+              </h2>
+              <span className="text-[10px] bg-gray-200/70 text-gray-500 px-2 py-0.5 rounded-md font-bold">
+                ID: {owner?.id}
+              </span>
             </div>
 
             {categories.length === 0 ? (
-              <div className="text-center text-gray-400 py-12 text-sm font-medium">No items available at this time.</div>
+              <div className="text-center text-gray-400 py-12 text-sm font-medium">
+                No items available at this time.
+              </div>
             ) : (
               categories.map((category) => (
                 <div key={category.id} className="mb-6">
                   {category.products && category.products.length > 0 && (
                     <>
-                      <h3 style={{ color: primaryColor }} className="text-xs font-black px-2 mb-2.5 uppercase tracking-wider">
+                      <h3
+                        style={{ color: primaryColor }}
+                        className="text-xs font-black px-2 mb-2.5 uppercase tracking-wider"
+                      >
                         {category.name}
                       </h3>
                       <ProductList
@@ -250,18 +295,28 @@ const ShopMainView = () => {
                 style={{ backgroundColor: primaryColor }}
                 className="w-full text-white py-4 rounded-2xl font-bold flex justify-between px-6 shadow-md active:scale-[0.99]"
               >
-                <span className="tracking-wide">View My Cart ({cart.length})</span>
-                <span className="font-extrabold">${totalAmount.toFixed(2)}</span>
+                <span className="tracking-wide">
+                  View My Cart ({cart.length})
+                </span>
+                <span className="font-extrabold">
+                  ${totalAmount.toFixed(2)}
+                </span>
               </button>
             </div>
           )}
         </>
       ) : (
         <div className="p-4">
-          <button onClick={() => setView("shop")} style={{ color: primaryColor }} className="mb-6 flex items-center font-bold text-sm">
+          <button
+            onClick={() => setView("shop")}
+            style={{ color: primaryColor }}
+            className="mb-6 flex items-center font-bold text-sm"
+          >
             <span className="mr-2 text-xl">←</span> Back to Shop Menu
           </button>
-          <h2 className="text-2xl font-black mb-5 text-gray-900 tracking-tight">Complete Your Order</h2>
+          <h2 className="text-2xl font-black mb-5 text-gray-900 tracking-tight">
+            Complete Your Order
+          </h2>
           <Checkout
             cartItems={cart}
             totalAmount={totalAmount}
