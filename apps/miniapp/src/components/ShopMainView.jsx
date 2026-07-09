@@ -251,6 +251,7 @@ const ShopMainView = () => {
             ownerId={owner?.id}
             clearCart={clearCart}
             primaryColor={primaryColor}
+            user={user}
             onSuccess={() => {
               localStorage.removeItem("shopping_cart");
               clearCart();

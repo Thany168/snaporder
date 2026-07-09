@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
-import api from '../api/axios'; 
+import api from '../api/axios';
 
-const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => {
+const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess, user }) => {
     const [customerPhone, setCustomerPhone] = useState('');
-    const [customerLocation, setCustomerLocation] = useState(''); 
+    const [customerLocation, setCustomerLocation] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // 🎯 Read Telegram user data — works from API user object AND raw WebApp initDataUnsafe
+    const tg = window.Telegram?.WebApp;
+    const tgUser = tg?.initDataUnsafe?.user;
+
+    // Priority: API user name → Telegram WebApp name → fallback
+    const customerName = user?.name
+        || (tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : null)
+        || 'Telegram Customer';
+
+    // Priority: API user telegram_id → WebApp user id → empty
+    const telegramId = user?.telegram_id
+        || tgUser?.id?.toString()
+        || '';
 
     const handleSubmitOrder = async (e) => {
         e.preventDefault();
@@ -13,44 +27,31 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
         try {
             setSubmitting(true);
 
-            // 🎯 STRICT PAYLOAD MATCH: Sends only what Laravel's CheckoutController validation requires
             const orderPayload = {
-                phone: customerPhone,
-                location: customerLocation,
-                name: "Telegram Customer",
-                telegram_id: "", 
+                phone: customerPhone || null,        // Optional — skip if empty
+                location: customerLocation || null,  // Optional — skip if empty
+                name: customerName,                  // Auto-filled from Telegram
+                telegram_id: telegramId,             // Auto-filled from Telegram
                 items: cartItems.map(item => ({
                     product_id: parseInt(item.product_id),
                     quantity: parseInt(item.quantity)
                 }))
             };
 
-            console.log("📦 Sending direct payload data structure to backend:", orderPayload);
+            console.log("📦 Sending payload to backend:", orderPayload);
 
-            // Send order payload directly to your public backend api endpoint 
             const response = await api.post(`/shop/${ownerId}/checkout`, orderPayload, {
-                headers: {
-                    'Authorization': undefined // Keep request clean from any conflicting token headers
-                }
+                headers: { 'Authorization': undefined }
             });
-            
-            if (response.status === 201 || response.status === 200) {
-                // 🚀 STEP 1: Wipe cache storage states instantly before alerts block the main thread
-                localStorage.removeItem("shopping_cart");
-                
-                // 🚀 STEP 2: Trigger custom useCart hook clear sequence
-                if (typeof clearCart === 'function') {
-                    clearCart(); 
-                }
 
-                // 🚀 STEP 3: Hand over execution context back to parent ShopMainView callback
-                if (onSuccess) {
-                    onSuccess(); 
-                }
-                return; 
+            if (response.status === 201 || response.status === 200) {
+                localStorage.removeItem("shopping_cart");
+                if (typeof clearCart === 'function') clearCart();
+                if (onSuccess) onSuccess();
+                return;
             }
         } catch (error) {
-            console.error("❌ Checkout system error trace:", error.response?.data || error.message);
+            console.error("❌ Checkout error:", error.response?.data || error.message);
             alert(error.response?.data?.message || "Something went wrong processing your checkout.");
         } finally {
             setSubmitting(false);
@@ -59,7 +60,17 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
 
     return (
         <form onSubmit={handleSubmitOrder} className="space-y-4 text-gray-700">
-            {/* Order Ledger Box */}
+
+            {/* 👤 Customer Info Banner — auto-detected from Telegram */}
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 flex items-center gap-3">
+                <span className="text-2xl">👤</span>
+                <div>
+                    <p className="text-xs font-bold text-blue-400 uppercase tracking-wide">Ordering as</p>
+                    <p className="text-sm font-bold text-blue-800">{customerName}</p>
+                </div>
+            </div>
+
+            {/* 🛒 Order Ledger Box */}
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                 <h3 className="font-bold text-gray-800 mb-2">Order Items</h3>
                 <div className="max-h-40 overflow-y-auto space-y-2 mb-3">
@@ -76,32 +87,36 @@ const Checkout = ({ cartItems, totalAmount, ownerId, clearCart, onSuccess }) => 
                 </div>
             </div>
 
-            {/* Form Fields */}
+            {/* 📞 Optional Phone Number */}
             <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Contact Phone Number</label>
-                <input 
-                    type="tel" 
-                    required 
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                    Contact Phone <span className="text-gray-300 font-normal normal-case">(optional)</span>
+                </label>
+                <input
+                    type="tel"
                     placeholder="e.g., 012345678"
-                    value={customerPhone} 
+                    value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     className="w-full p-4 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
                 />
             </div>
 
+            {/* 📍 Optional Location */}
             <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Delivery Location / Table Code</label>
-                <input 
-                    type="text" 
-                    required
+                <label className="text-xs font-bold text-gray-400 uppercase">
+                    Delivery Location / Table <span className="text-gray-300 font-normal normal-case">(optional)</span>
+                </label>
+                <input
+                    type="text"
                     placeholder="e.g., Table 05 / Street 200 Room B"
-                    value={customerLocation} 
+                    value={customerLocation}
                     onChange={(e) => setCustomerLocation(e.target.value)}
                     className="w-full p-4 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
                 />
             </div>
-            <button 
-                type="submit" 
+
+            <button
+                type="submit"
                 disabled={submitting || cartItems.length === 0}
                 className="w-full bg-blue-600 active:bg-blue-700 disabled:bg-gray-300 text-white font-bold py-4 rounded-2xl text-center mt-2 transition-all shadow-md"
             >
