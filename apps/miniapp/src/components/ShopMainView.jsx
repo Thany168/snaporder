@@ -77,6 +77,23 @@ const ShopMainView = () => {
     };
   }, [currentShopId, getLiveParamId, tg]);
 
+  // 🧹 AUTO-CLEAR STALE CART: When Telegram Mini App is re-opened (activated event),
+  // clear any abandoned cart from a previous session and reset view to shop.
+  useEffect(() => {
+    if (!tg) return;
+
+    const handleActivated = () => {
+      // User re-opened the Mini App — wipe any stale pending cart
+      clearCart();
+      setView("shop");
+    };
+
+    tg.onEvent("activated", handleActivated);
+    return () => {
+      tg.offEvent("activated", handleActivated);
+    };
+  }, [tg, clearCart]);
+
   useEffect(() => {
     if (!currentShopId) return;
     const loadShopData = async () => {
